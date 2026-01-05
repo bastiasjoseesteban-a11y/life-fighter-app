@@ -1,50 +1,49 @@
-// Componente para cada boxeador en la Galería
-function TarjetaLeyenda({ boxeador }: { boxeador: any }) {
+"use client";
+import React, { useState, useEffect } from 'react';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+
+export default function GaleriaPage() {
+  const [leyendas, setLeyendas] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchLeyendas = async () => {
+      const { data } = await supabase.from('boxeadores').select('*').order('nombre');
+      if (data) setLeyendas(data);
+    };
+    fetchLeyendas();
+  }, []);
+
   return (
-    <div className="bg-zinc-900 rounded-[2.5rem] border-2 border-zinc-800 overflow-hidden p-6 hover:border-yellow-500 transition-all group">
-      {/* Encabezado: Nombre y Apodo */}
-      <div className="mb-4">
-        <h3 className="text-2xl font-black uppercase italic text-white group-hover:text-yellow-500 transition-colors">
-          {boxeador.nombre}
-        </h3>
-        {boxeador.apodo && (
-          <p className="text-yellow-500/60 text-xs font-bold uppercase tracking-widest">
-            "{boxeador.apodo}"
-          </p>
-        )}
+    <main className="min-h-screen bg-black text-white p-8">
+      <h1 className="text-5xl font-black italic mb-12 text-yellow-500 uppercase tracking-tighter">Galería de Leyendas</h1>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {leyendas.map((b) => (
+          <div key={b.id} className="bg-zinc-900 border-2 border-zinc-800 p-8 rounded-[3rem] hover:border-yellow-500 transition-all">
+            <h3 className="text-3xl font-black uppercase italic mb-1 leading-none">{b.nombre}</h3>
+            <p className="text-yellow-500/60 text-xs font-black uppercase mb-6 italic tracking-widest">
+              {b.apodo ? `"${b.apodo}"` : b.nacionalidad}
+            </p>
+            
+            <div className="space-y-4">
+              <FilaFicha label="Récord" valor={b["record (V-D-E / KO)"]} />
+              <FilaFicha label="Títulos" valor={b["títulos de campeón"]} />
+              <FilaFicha label="Peso" valor={b["peso (kg/lbs)"]} />
+              <FilaFicha label="Altura" valor={b["altura/alcance (cm)"]} />
+            </div>
+          </div>
+        ))}
       </div>
+    </main>
+  );
+}
 
-      {/* Mini Ficha Técnica Rápida */}
-      <div className="space-y-3">
-        <div className="flex justify-between items-end border-b border-zinc-800 pb-2">
-          <span className="text-[10px] text-zinc-500 font-black uppercase">Récord</span>
-          <span className="text-sm font-bold text-zinc-200">
-            {boxeador["record (V-D-E / KO)"]}
-          </span>
-        </div>
-
-        <div className="flex justify-between items-end border-b border-zinc-800 pb-2">
-          <span className="text-[10px] text-zinc-500 font-black uppercase">Categoría</span>
-          <span className="text-sm font-bold text-zinc-200">
-            {boxeador["peso (kg/lbs)"]}
-          </span>
-        </div>
-
-        <div className="flex justify-between items-end">
-          <span className="text-[10px] text-zinc-500 font-black uppercase">Alcance</span>
-          <span className="text-sm font-bold text-zinc-200">
-            {boxeador["altura/alcance (cm)"]}
-          </span>
-        </div>
-      </div>
-
-      {/* Títulos en la parte inferior */}
-      <div className="mt-4 pt-4 border-t-2 border-yellow-500/20">
-        <p className="text-[9px] text-zinc-500 font-black uppercase mb-1">Palmarés</p>
-        <p className="text-xs text-zinc-300 italic line-clamp-2">
-          {boxeador["títulos de campeón"]}
-        </p>
-      </div>
+function FilaFicha({ label, valor }: any) {
+  return (
+    <div className="border-l-2 border-yellow-500/30 pl-4">
+      <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{label}</p>
+      <p className="text-lg font-bold text-white italic leading-tight">{valor || '---'}</p>
     </div>
   );
 }
