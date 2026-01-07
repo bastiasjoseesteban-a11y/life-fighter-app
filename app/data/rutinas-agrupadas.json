@@ -1,0 +1,88 @@
+{
+  "boxeadores": [
+    {
+      "id": 1,
+      "nombre": "Muhammad Ali",
+      "estilo": "Estilo de baile",
+      "record": "56-5-0",
+      "rutinas": [
+        {
+          "round": 1,
+          "ejercicios": [
+            {
+              "ejercicio": "Saltar la cuerda",
+              "duracion_segundos": 180,
+              "descripcion_ejercicio": "Calentamiento cardiovascular",
+              "nivel": "Principiante"
+            },
+            {
+              "ejercicio": "Sombras",
+              "duracion_segundos": 180,
+              "descripcion_ejercicio": "Trabajo técnico de movimientos",
+              "nivel": "Principiante"
+            }
+          ]
+        },
+        {
+          "round": 2,
+          "ejercicios": [
+            {
+              "ejercicio": "Bolsa pesada",
+              "duracion_segundos": 180,
+              "descripcion_ejercicio": "Desarrollo de potencia",
+              "nivel": "Intermedio"
+            },
+            {
+              "ejercicio": "Jabs y directos",
+              "duracion_segundos": 180,
+              "descripcion_ejercicio": "Trabajo de combinaciones básicas",
+              "nivel": "Intermedio"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "nombre": "Mike Tyson",
+      "estilo": "Golpeador",
+      "record": "50-6-0",
+      "rutinas": [
+        {
+          "round": 1,
+          "ejercicios": [
+            {
+              "ejercicio": "Calentamiento dinámico",
+              "duracion_segundos": 180,
+              "descripcion_ejercicio": "Movilidad articular",
+              "nivel": "Principiante"
+            },
+            {
+              "ejercicio": "Footwork básico",
+              "duracion_segundos": 180,
+              "descripcion_ejercicio": "Trabajo de pies",
+              "nivel": "Principiante"
+            }
+          ]
+        },
+        {
+          "round": 2,
+          "ejercicios": [
+            {
+              "ejercicio": "Ganchos al cuerpo",
+              "duracion_segundos": 180,
+              "descripcion_ejercicio": "Desarrollo de potencia en ganchos",
+              "nivel": "Intermedio"
+            },
+            {
+              "ejercicio": "Upper cuts",
+              "duracion_segundos": 180,
+              "descripcion_ejercicio": "Golpes ascendentes",
+              "nivel": "Intermedio"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

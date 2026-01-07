@@ -1,212 +1,153 @@
-"use client";
-import React, { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
-import { 
-  Play, Pause, RotateCcw, Dumbbell, Apple, ScrollText, 
-  BookOpen, History, Swords, Brain, Trophy, IdCard, ListChecks
-} from 'lucide-react';
+import { Metadata } from 'next';
+import Link from 'next/link';
+import { supabase } from '@/lib/supabaseClient';
+import { Boxeador } from '@/lib/types';
+import { Target, Trophy, Clock, Flame } from 'lucide-react';
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+export const metadata: Metadata = {
+  title: 'Selecciona tu Leyenda - LifeFighter',
+  description: 'Elige un boxeador legendario y entrena con su estilo único',
+};
 
-const FRASES_MOTIVACIONALES = [
-  "Eres más fuerte de lo que crees. ¡No te detengas!",
-  "La Vida pega fuerte, pero levántate y sigue entrenando.",
-  "Tu mente es tu mejor golpe.",
-  "¡Vamos! ¡Un round más!"
-];
+async function getBoxeadores(): Promise<Boxeador[]> {
+  try {
+    const { data, error } = await supabase
+      .from('boxeadores')
+      .select('*')
+      .order('nombre');
 
-export default function EntrenarPage() {
-  const [vista, setVista] = useState<'menu' | 'dashboard' | 'cronometro'>('menu');
-  const [pestaña, setPestaña] = useState<'rutina' | 'detalles' | 'progreso'>('rutina');
-  const [seccionDetalle, setSeccionDetalle] = useState<string>('biografia');
-  const [nivel, setNivel] = useState<'principiante' | 'medio' | 'avanzado'>('medio');
-  
-  const [boxeadores, setBoxeadores] = useState<any[]>([]);
-  const [boxeadorSeleccionado, setBoxeadorSeleccionado] = useState<any>(null);
-  const [detallesBoxeador, setDetallesBoxeador] = useState<any>(null);
-  const [planEntrenamiento, setPlanEntrenamiento] = useState<any[]>([]);
-  
-  const [xpTotal, setXpTotal] = useState(0);
-  const [historialDB, setHistorialDB] = useState<any[]>([]);
-  const [segundos, setSegundos] = useState(120);
-  const [activo, setActivo] = useState(false);
-  const [ejercicioActual, setEjercicioActual] = useState<any>(null);
-
-  // 1. Cargar Datos Iniciales
-  useEffect(() => {
-    const initApp = async () => {
-      const { data: b } = await supabase.from('boxeadores').select('*').order('id');
-      if (b) setBoxeadores(b);
-      cargarHistorial();
-    };
-    initApp();
-  }, []);
-
-  // 2. Cargar Historial y Calcular XP
-  const cargarHistorial = async () => {
-    const { data } = await supabase.from('progreso').select('*').order('created_at', { ascending: false });
-    if (data) {
-      setHistorialDB(data);
-      setXpTotal(data.reduce((acc, curr) => acc + (curr.xp_ganado || 0), 0));
+    if (error) {
+      console.error('Error obteniendo boxeadores:', error);
+      return [];
     }
-  };
 
-  // 3. Cargar Detalles y Rutinas al seleccionar un boxeador
-  useEffect(() => {
-    if (boxeadorSeleccionado) {
-      const fetchData = async () => {
-        const { data: rounds } = await supabase.from('rutinas').select('*').eq('boxeador_id', boxeadorSeleccionado.id).order('round');
-        const { data: infoExtra } = await supabase.from('boxeadores_detalles').select('*').eq('id', boxeadorSeleccionado.id).single();
+    return data || [];
+  } catch (error) {
+    console.error('Error:', error);
+    return [];
+  }
+}
 
-        if (rounds) {
-          const tiempo = nivel === 'principiante' ? 60 : nivel === 'medio' ? 120 : 180;
-          setPlanEntrenamiento(rounds.map(r => ({ ...r, duracion_segundos: tiempo })));
-        }
-        if (infoExtra) setDetallesBoxeador(infoExtra);
-      };
-      fetchData();
-    }
-  }, [boxeadorSeleccionado, nivel]);
+export default async function EntrenarPage() {
+  const boxeadores = await getBoxeadores();
 
-  // 4. Voz (Optimizado Android/iOS)
-  const hablar = (texto: string) => {
-    if (typeof window !== 'undefined' && window.speechSynthesis) {
-      window.speechSynthesis.cancel(); 
-      const ut = new SpeechSynthesisUtterance(texto);
-      ut.lang = 'es-ES';
-      window.speechSynthesis.speak(ut);
-    }
-  };
+  // Estadísticas
+  const stats = [
+    { icon: Target, label: 'Boxeadores', value: boxeadores.length, color: 'text-red-500' },
+    { icon: Trophy, label: 'Estilos Únicos', value: new Set(boxeadores.map(b => b.estilo)).size, color: 'text-yellow-500' },
+    { icon: Clock, label: 'Horas de Entrenamiento', value: '150+', color: 'text-blue-500' },
+    { icon: Flame, label: 'Niveles', value: '3', color: 'text-orange-500' },
+  ];
 
-  // 5. Guardado en Supabase al terminar el cronómetro
-  const guardarProgreso = async () => {
-    const { error } = await supabase.from('progreso').insert([{
-      boxeador_nombre: boxeadorSeleccionado.nombre,
-      round_completado: ejercicioActual.round,
-      xp_ganado: 50,
-      nivel_dificultad: nivel
-    }]);
-    if (!error) cargarHistorial();
-  };
-
-  useEffect(() => {
-    let timer: any;
-    if (activo && segundos > 0) {
-      timer = setInterval(() => setSegundos(s => s - 1), 1000);
-    } else if (segundos === 0 && activo) {
-      setActivo(false);
-      guardarProgreso();
-      hablar(FRASES_MOTIVACIONALES[Math.floor(Math.random() * FRASES_MOTIVACIONALES.length)]);
-    }
-    return () => clearInterval(timer);
-  }, [activo, segundos]);
-
-  // --- RENDERS ---
-
-  if (vista === 'menu') return (
-    <main className="min-h-screen bg-black text-white p-6">
-       <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-black italic text-yellow-500 uppercase">Boxing Lab</h1>
-          <div className="bg-zinc-900 px-4 py-2 rounded-full border border-yellow-500/30 text-sm font-bold">{xpTotal} XP</div>
-       </div>
-       <div className="grid gap-6">
-         {boxeadores.map(b => (
-           <div key={b.id} onClick={() => {setBoxeadorSeleccionado(b); setVista('dashboard');}} 
-                className="bg-zinc-900 p-8 rounded-[2.5rem] border-2 border-zinc-800 active:border-yellow-500">
-             <h3 className="text-3xl font-black uppercase italic">{b.nombre}</h3>
-             <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest">{b.nacionalidad}</p>
-           </div>
-         ))}
-       </div>
-    </main>
-  );
-
-  if (vista === 'dashboard') return (
-    <main className="min-h-screen bg-black text-white p-6 pb-24">
-      <button onClick={() => setVista('menu')} className="text-zinc-500 text-xs font-black mb-6 uppercase">← Volver</button>
-      <h2 className="text-5xl font-black uppercase italic mb-8 text-yellow-500 leading-none">{boxeadorSeleccionado?.nombre}</h2>
-
-      <div className="flex gap-6 border-b-2 border-zinc-900 mb-8 overflow-x-auto no-scrollbar">
-        {['rutina', 'detalles', 'progreso'].map((tab) => (
-          <button key={tab} onClick={() => setPestaña(tab as any)} 
-            className={`pb-4 px-1 text-xs font-black uppercase tracking-widest ${pestaña === tab ? 'border-b-4 border-yellow-500 text-yellow-500' : 'text-zinc-600'}`}>
-            {tab === 'rutina' ? 'Entrenar' : tab === 'detalles' ? 'Enciclopedia' : 'Progreso'}
-          </button>
-        ))}
-      </div>
-
-      {pestaña === 'detalles' && (
-        <div className="animate-in slide-in-from-bottom-6">
-          <div className="grid grid-cols-3 gap-3 mb-8">
-            <DetalleBtn icon={<History size={24}/>} label="Bio" active={seccionDetalle === 'biografia'} onClick={() => setSeccionDetalle('biografia')} />
-            <DetalleBtn icon={<Swords size={24}/>} label="Técnica" active={seccionDetalle === 'instruccion_tecnica'} onClick={() => setSeccionDetalle('instruccion_tecnica')} />
-            <DetalleBtn icon={<ListChecks size={24}/>} label="Combos" active={seccionDetalle === 'combinaciones'} onClick={() => setSeccionDetalle('combinaciones')} />
-            <DetalleBtn icon={<Dumbbell size={24}/>} label="Plan" active={seccionDetalle === 'entrenamiento'} onClick={() => setSeccionDetalle('entrenamiento')} />
-            <DetalleBtn icon={<Apple size={24}/>} label="Dieta" active={seccionDetalle === 'alimentacion'} onClick={() => setSeccionDetalle('alimentacion')} />
-            <DetalleBtn icon={<Brain size={24}/>} label="Mente" active={seccionDetalle === 'filosofia_vida'} onClick={() => setSeccionDetalle('filosofia_vida')} />
-            <DetalleBtn icon={<BookOpen size={24}/>} label="Época" active={seccionDetalle === 'contexto_historico'} onClick={() => setSeccionDetalle('contexto_historico')} />
-            <DetalleBtn icon={<Trophy size={24}/>} label="Legado" active={seccionDetalle === 'legado_historico'} onClick={() => setSeccionDetalle('legado_historico')} />
-            <DetalleBtn icon={<IdCard size={24}/>} label="Ficha" active={seccionDetalle === 'ficha'} onClick={() => setSeccionDetalle('ficha')} />
-          </div>
-
-          <div className="bg-zinc-900 p-8 rounded-[3rem] border-2 border-zinc-800 min-h-[300px]">
-             <h4 className="text-yellow-500 font-black uppercase italic text-xs mb-6 tracking-widest">{seccionDetalle.replace('_', ' ')}</h4>
-             {seccionDetalle === 'ficha' ? (
-                <div className="grid gap-6">
-                   <FichaDato label="Récord" valor={boxeadorSeleccionado["record (V-D-E / KO)"]} />
-                   <FichaDato label="Títulos" valor={boxeadorSeleccionado["títulos de campeón"]} />
-                   <FichaDato label="Peso" valor={boxeadorSeleccionado["peso (kg/lbs)"]} />
-                   <FichaDato label="Altura" valor={boxeadorSeleccionado["altura/alcance (cm)"]} />
-                </div>
-             ) : (
-               <p className="text-2xl leading-relaxed text-zinc-200 font-medium italic">
-                 {detallesBoxeador?.[seccionDetalle] || "Cargando..."}
-               </p>
-             )}
-          </div>
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black">
+      {/* Header */}
+      <div className="container mx-auto px-4 py-12">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter mb-4">
+            <span className="text-yellow-500">ELIGE</span> TU LEYENDA
+          </h1>
+          <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+            Selecciona un campeón legendario y descubre su rutina de entrenamiento personalizada.
+            Cada boxeador tiene un estilo único que puedes aprender y adaptar.
+          </p>
         </div>
-      )}
-      {/* ... Resto de pestañas (Rutina y Progreso) idénticas al anterior ... */}
-    </main>
-  );
 
-  // Vista del cronómetro (igual que antes)
-  if (vista === 'cronometro') return (
-    <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 text-center">
-       <h2 className="text-4xl font-black uppercase italic text-yellow-500 mb-4">{ejercicioActual?.ejercicio}</h2>
-       <div className="text-[160px] font-black italic leading-none mb-12 tabular-nums">
-         {Math.floor(segundos/60)}:{(segundos%60).toString().padStart(2,'0')}
-       </div>
-       <div className="flex gap-8">
-          <button onClick={() => setActivo(!activo)} className="w-32 h-32 bg-white rounded-full flex items-center justify-center text-black">
-            {activo ? <Pause size={48} fill="black"/> : <Play size={48} fill="black" className="ml-2"/>}
-          </button>
-          <button onClick={() => setVista('dashboard')} className="w-20 h-20 bg-zinc-900 rounded-full flex items-center justify-center border-2 border-zinc-800">
-            <RotateCcw size={32}/>
-          </button>
-       </div>
-    </main>
-  );
+        {/* Estadísticas */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+          {stats.map((stat, index) => (
+            <div key={index} className="bg-gray-800/30 p-6 rounded-2xl border border-gray-700">
+              <div className="flex items-center gap-3 mb-3">
+                <div className={`p-2 rounded-lg ${stat.color.replace('text-', 'bg-')}/20`}>
+                  <stat.icon className={`w-6 h-6 ${stat.color}`} />
+                </div>
+                <span className="text-gray-400">{stat.label}</span>
+              </div>
+              <div className="text-3xl font-bold">{stat.value}</div>
+            </div>
+          ))}
+        </div>
 
-  return null;
-}
+        {/* Grid de Boxeadores */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {boxeadores.map((boxeador) => (
+            <Link
+              key={boxeador.id}
+              href={`/entrenar/${boxeador.id}`}
+              className="group block"
+            >
+              <div className="bg-gray-800/30 border-2 border-gray-700 rounded-3xl p-6 h-full transition-all duration-300 group-hover:border-yellow-500 group-hover:scale-[1.02] card-hover">
+                {/* Avatar del boxeador */}
+                <div className="w-full h-56 bg-gradient-to-br from-gray-700 to-gray-900 rounded-2xl mb-6 flex items-center justify-center relative overflow-hidden">
+                  <div className="text-8xl z-10">🥊</div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                </div>
 
-// Botón de la grilla de Enciclopedia
-function DetalleBtn({ icon, label, active, onClick }: any) {
-  return (
-    <button onClick={onClick} className={`flex flex-col items-center justify-center p-5 rounded-[2rem] border-2 transition-all ${active ? 'bg-yellow-500 border-yellow-500 text-black' : 'bg-zinc-900 border-zinc-800 text-zinc-500'}`}>
-      <div className="mb-2">{icon}</div>
-      <span className="text-[10px] font-black uppercase leading-none">{label}</span>
-    </button>
-  );
-}
+                {/* Información */}
+                <h3 className="text-2xl font-black uppercase mb-2 group-hover:text-yellow-500 transition-colors">
+                  {boxeador.nombre}
+                </h3>
+                
+                <div className="mb-4">
+                  <span className="inline-block px-3 py-1 bg-yellow-500/20 text-yellow-400 text-sm font-bold rounded-full">
+                    {boxeador.estilo || 'Estilo Clásico'}
+                  </span>
+                </div>
 
-// Datos de la Ficha Técnica con columnas especiales
-function FichaDato({ label, valor }: any) {
-  return (
-    <div className="border-l-4 border-yellow-500 pl-4 py-1 bg-white/5 rounded-r-xl">
-      <p className="text-zinc-500 text-[10px] font-black uppercase mb-1">{label}</p>
-      <p className="text-xl font-black uppercase italic text-white leading-none">{valor || 'N/A'}</p>
+                {/* Detalles */}
+                <div className="space-y-2 text-sm text-gray-400 mb-6">
+                  {boxeador.record && (
+                    <div className="flex items-center">
+                      <Trophy className="w-4 h-4 mr-2" />
+                      <span>{boxeador.record}</span>
+                    </div>
+                  )}
+                  {boxeador.nacionalidad && (
+                    <div className="flex items-center">
+                      <span>🌍 {boxeador.nacionalidad}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Botón */}
+                <div className="mt-auto">
+                  <div className="w-full py-3 bg-gradient-to-r from-gray-700 to-gray-800 group-hover:from-yellow-600 group-hover:to-orange-600 text-white font-bold rounded-xl text-center transition-all">
+                    ENTRENAR CON {boxeador.nombre.split(' ')[0].toUpperCase()}
+                  </div>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+
+        {/* Si no hay boxeadores */}
+        {boxeadores.length === 0 && (
+          <div className="text-center py-20">
+            <div className="text-8xl mb-6">🥊</div>
+            <h3 className="text-2xl font-bold mb-4 text-yellow-500">BASE DE DATOS VACÍA</h3>
+            <p className="text-gray-400 mb-8 max-w-md mx-auto">
+              No se encontraron boxeadores en la base de datos. 
+              Añade algunos desde el panel de administración para comenzar.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                href="/admin"
+                className="px-6 py-3 bg-yellow-600 text-black font-bold rounded-xl hover:bg-yellow-500 transition"
+              >
+                IR AL PANEL ADMIN
+              </Link>
+              <a
+                href="https://supabase.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-6 py-3 bg-gray-800 text-white font-bold rounded-xl hover:bg-gray-700 transition"
+              >
+                VER SUPABASE
+              </a>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
