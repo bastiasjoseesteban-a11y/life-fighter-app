@@ -1,63 +1,130 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --color-foreground: rgb(255, 255, 255);
-  --color-background-start: rgb(0, 0, 0);
-  --color-background-end: rgb(0, 0, 0);
+  --color-background-primary: #0A0A0F;
+  --color-background-secondary: #1A1A23;
+  --color-surface-overlay: rgba(0, 0, 0, 0.85);
+  --color-accent-primary: #00F0FF;
+  --color-accent-primary-glow: rgba(0, 240, 255, 0.5);
+  --color-accent-secondary: #FF004D;
+  --color-accent-success: #00FF9D;
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #B0B0C0;
+  --color-text-on-accent: #0A0A0F;
+  --font-family-sans: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
-:root {
-  background: black;
-  color: white;
+@layer base {
+  html, body {
+    @apply h-full overscroll-none;
+  }
+
+  body {
+    font-family: var(--font-family-sans);
+    background-color: var(--color-background-primary);
+    color: var(--color-text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+    text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.8);
+  }
+
+  h1 { @apply text-3xl md:text-4xl font-black tracking-tight; }
+  h2 { @apply text-2xl md:text-3xl font-extrabold; }
+  h3 { @apply text-xl md:text-2xl font-bold; }
+
+  a {
+    color: var(--color-accent-primary);
+    font-weight: 600;
+    transition: opacity 0.2s;
+    text-decoration: none;
+  }
+  
+  a:hover { opacity: 0.9; }
 }
 
-body {
-  color: var(--color-foreground);
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      var(--color-background-end)
-    )
-    var(--color-background-start);
-  min-height: 100vh;
+@layer components {
+  .btn-primary {
+    @apply w-full py-4 px-6 rounded-2xl font-extrabold text-lg text-center transition-all duration-300 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+    background-color: var(--color-accent-primary);
+    color: var(--color-text-on-accent);
+    box-shadow: 0 0 20px var(--color-accent-primary-glow);
+  }
+  
+  .btn-primary:hover {
+    box-shadow: 0 0 30px var(--color-accent-primary-glow);
+  }
+
+  .btn-secondary {
+    @apply w-full py-3 px-5 rounded-xl font-bold text-base text-center transition-all duration-300 border-2;
+    background-color: transparent;
+    border-color: var(--color-accent-secondary);
+    color: var(--color-accent-secondary);
+  }
+
+  .card {
+    @apply rounded-xl p-4 transition-all duration-300;
+    background-color: var(--color-background-secondary);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  
+  .card-hover:hover {
+    @apply translate-y-[-4px];
+    border-color: var(--color-accent-primary);
+    box-shadow: 0 10px 25px rgba(0, 240, 255, 0.15);
+  }
+
+  .progress-bar {
+    @apply w-full h-2 rounded-full overflow-hidden;
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .progress-fill {
+    @apply h-full rounded-full transition-all duration-500;
+    background-color: var(--color-accent-primary);
+  }
+
+  .modal-overlay {
+    @apply fixed inset-0 z-50 flex items-center justify-center p-4;
+    background-color: var(--color-surface-overlay);
+  }
+  
+  .modal-content {
+    @apply card max-w-md w-full max-h-[90vh] overflow-y-auto;
+  }
 }
 
-/* Animaciones personalizadas */
-@keyframes pulse-glow {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+@layer utilities {
+  .text-sun-readable {
+    font-weight: 700 !important;
+    text-shadow: 0px 2px 4px rgba(0, 0, 0, 0.9);
+  }
+  
+  .glow-accent {
+    box-shadow: 0 0 15px var(--color-accent-primary-glow);
+  }
+  
+  .bg-gradient-lf {
+    background: linear-gradient(135deg, var(--color-background-primary) 0%, #15152a 50%, var(--color-background-primary) 100%);
+  }
 }
 
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
+/* Animaciones fuera de los layers para evitar conflictos */
+@keyframes pulse-glow-lf {
+  0%, 100% { 
+    opacity: 1;
+    box-shadow: 0 0 20px var(--color-accent-primary-glow);
+  }
+  50% { 
+    opacity: 0.8;
+    box-shadow: 0 0 30px var(--color-accent-primary-glow);
+  }
 }
 
-/* Scrollbar personalizada */
-::-webkit-scrollbar {
-  width: 10px;
-}
-
-::-webkit-scrollbar-track {
-  background: #111827;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #f59e0b;
-  border-radius: 5px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #d97706;
-}
-
-/* Efectos de tarjetas */
-.card-hover {
-  transition: all 0.3s ease;
-}
-
-.card-hover:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 25px rgba(245, 158, 11, 0.1);
+.animate-pulse-glow-lf {
+  animation: pulse-glow-lf 2s ease-in-out infinite;
 }

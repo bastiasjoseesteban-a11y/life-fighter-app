@@ -1,243 +1,135 @@
-'use client';
-
-import { useState, useEffect } from 'react';
+"use client";
+import { useState, useEffect, useRef } from 'react';
+import { createClient } from '@supabase/supabase-js';
+import { ChevronLeft, Search } from 'lucide-react';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabaseClient';
-import { Boxeador } from '@/lib/types';
-import { Search, Filter, Trophy, Target, Users } from 'lucide-react';
 
-export default function GaleriaPage() {
-  const [boxeadores, setBoxeadores] = useState<Boxeador[]>([]);
-  const [loading, setLoading] = useState(true);
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+
+export default function GaleriaFinal() {
+  const [boxeadores, setBoxeadores] = useState<any[]>([]);
   const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState('todos');
+  const [loading, setLoading] = useState(true);
+  
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
 
   useEffect(() => {
-    cargarBoxeadores();
-  }, []);
-
-  const cargarBoxeadores = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('boxeadores')
-        .select('*')
-        .order('nombre');
-
-      if (error) throw error;
-      setBoxeadores(data || []);
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
+    async function cargar() {
+      // Cambio a la tabla completa
+      const { data } = await supabase.from('boxeadores_completo').select('*').order('id');
+      if (data) setBoxeadores(data);
       setLoading(false);
     }
+    cargar();
+  }, []);
+
+  const startDragging = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    setStartX(e.pageX - (scrollRef.current?.offsetLeft || 0));
+    setScrollLeft(scrollRef.current?.scrollLeft || 0);
   };
 
-  // Filtrar boxeadores
-  const boxeadoresFiltrados = boxeadores.filter(boxeador => {
-    const matchSearch = boxeador.nombre.toLowerCase().includes(search.toLowerCase()) ||
-                      boxeador.estilo?.toLowerCase().includes(search.toLowerCase()) ||
-                      boxeador.nacionalidad?.toLowerCase().includes(search.toLowerCase());
-    
-    const matchFilter = filter === 'todos' || 
-                       (filter === 'pesado' && boxeador.peso?.includes('Pesado')) ||
-                       (filter === 'medio' && boxeador.peso?.includes('Medio'));
-    
-    return matchSearch && matchFilter;
+  const stopDragging = () => setIsDragging(false);
+
+  const moveMouse = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    const x = e.pageX - (scrollRef.current?.offsetLeft || 0);
+    const walk = (x - startX) * 2; 
+    if (scrollRef.current) scrollRef.current.scrollLeft = scrollLeft - walk;
+  };
+
+  const filtrados = boxeadores.filter(b => {
+    const term = search.toLowerCase();
+    return (
+      b.nombre?.toLowerCase().includes(term) || 
+      b.apodo?.toLowerCase().includes(term) || // Buscamos también por apodo
+      b.nacionalidad?.toLowerCase().includes(term) || 
+      b.categoria?.toLowerCase().includes(term)
+    );
   });
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-yellow-500 mx-auto mb-4"></div>
-          <p>Cargando galería de leyendas...</p>
-        </div>
-      </div>
-    );
+  const paginas = [];
+  for (let i = 0; i < filtrados.length; i += 4) {
+    paginas.push(filtrados.slice(i, i + 4));
   }
 
+  if (loading) return (
+    <div className="fixed inset-0 bg-black flex items-center justify-center z-[999]">
+      <div className="text-[#00FBFF] font-black italic animate-pulse text-2xl uppercase">CARGANDO LEYENDAS...</div>
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black">
-      <div className="container mx-auto px-4 py-12">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter mb-4">
-            <span className="text-yellow-500">GALERÍA</span> DE LEYENDAS
-          </h1>
-          <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-            Conoce a los campeones que han hecho historia en el boxeo mundial. 
-            Cada uno con un estilo único y un legado imborrable.
-          </p>
+    <div className="fixed inset-0 bg-black text-white flex flex-col overflow-hidden font-sans z-[100] select-none">
+      
+      <header className="pt-12 pb-4 px-6 flex flex-col gap-5 bg-black/95 shrink-0 border-b border-white/5">
+        <div className="flex justify-between items-center">
+          <Link href="/" className="p-3 bg-white/5 rounded-full border border-white/10 active:scale-90"><ChevronLeft size={24} /></Link>
+          <div className="text-center">
+            <h1 className="text-xl font-black italic tracking-tighter uppercase leading-none m-0">
+              GALERÍA DE <br/> <span className="text-[#00FBFF] text-2xl">LEYENDAS</span>
+            </h1>
+          </div>
+          <div className="p-4 opacity-0">ADM</div>
         </div>
 
-        {/* Filtros y Búsqueda */}
-        <div className="mb-8">
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
-            <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Buscar boxeador por nombre, estilo o nacionalidad..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-yellow-500"
-              />
-            </div>
-            
-            <div className="flex gap-2">
-              <button
-                onClick={() => setFilter('todos')}
-                className={`px-4 py-3 rounded-xl font-bold transition ${
-                  filter === 'todos' 
-                    ? 'bg-yellow-500 text-black' 
-                    : 'bg-gray-800 hover:bg-gray-700'
-                }`}
-              >
-                TODOS
-              </button>
-              <button
-                onClick={() => setFilter('pesado')}
-                className={`px-4 py-3 rounded-xl font-bold transition ${
-                  filter === 'pesado' 
-                    ? 'bg-red-500 text-white' 
-                    : 'bg-gray-800 hover:bg-gray-700'
-                }`}
-              >
-                PESADO
-              </button>
-              <button
-                onClick={() => setFilter('medio')}
-                className={`px-4 py-3 rounded-xl font-bold transition ${
-                  filter === 'medio' 
-                    ? 'bg-blue-500 text-white' 
-                    : 'bg-gray-800 hover:bg-gray-700'
-                }`}
-              >
-                MEDIO
-              </button>
-            </div>
-          </div>
-
-          {/* Estadísticas */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <div className="bg-gray-800/30 p-4 rounded-xl">
-              <div className="flex items-center gap-3">
-                <Users className="w-5 h-5 text-blue-400" />
-                <div>
-                  <div className="text-sm text-gray-400">LEYENDAS</div>
-                  <div className="text-2xl font-bold">{boxeadores.length}</div>
-                </div>
-              </div>
-            </div>
-            <div className="bg-gray-800/30 p-4 rounded-xl">
-              <div className="flex items-center gap-3">
-                <Target className="w-5 h-5 text-red-400" />
-                <div>
-                  <div className="text-sm text-gray-400">ESTILOS ÚNICOS</div>
-                  <div className="text-2xl font-bold">
-                    {new Set(boxeadores.map(b => b.estilo)).size}
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="bg-gray-800/30 p-4 rounded-xl">
-              <div className="flex items-center gap-3">
-                <Trophy className="w-5 h-5 text-yellow-400" />
-                <div>
-                  <div className="text-sm text-gray-400">PAÍSES</div>
-                  <div className="text-2xl font-bold">
-                    {new Set(boxeadores.map(b => b.nacionalidad)).size}
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="bg-gray-800/30 p-4 rounded-xl">
-              <div className="flex items-center gap-3">
-                <Filter className="w-5 h-5 text-green-400" />
-                <div>
-                  <div className="text-sm text-gray-400">MOSTRANDO</div>
-                  <div className="text-2xl font-bold">{boxeadoresFiltrados.length}</div>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div className="relative">
+          <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-[#00FBFF] opacity-50" size={18} />
+          <input 
+            type="text" 
+            placeholder="BUSCAR APODO, PAÍS..." 
+            value={search}
+            className="w-full bg-[#111] border-2 border-white/5 rounded-2xl py-4 pl-14 pr-6 text-sm font-bold focus:border-[#00FBFF] outline-none transition-all"
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
+      </header>
 
-        {/* Grid de Boxeadores */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {boxeadoresFiltrados.map((boxeador) => (
-            <Link
-              key={boxeador.id}
-              href={`/boxeador/${boxeador.id}`}
-              className="group block"
-            >
-              <div className="bg-gray-800/30 border-2 border-gray-700 rounded-2xl p-6 h-full transition-all group-hover:border-yellow-500 group-hover:scale-[1.02]">
-                {/* Avatar */}
-                <div className="w-full h-48 bg-gradient-to-br from-gray-700 to-gray-900 rounded-xl mb-4 flex items-center justify-center relative overflow-hidden">
-                  <div className="text-7xl z-10">🥊</div>
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                  <div className="absolute bottom-4 right-4 px-3 py-1 bg-yellow-500/90 text-black text-xs font-bold rounded-full">
-                    {boxeador.peso || 'PESADO'}
-                  </div>
+      <main 
+        ref={scrollRef}
+        onMouseDown={startDragging} onMouseLeave={stopDragging} onMouseUp={stopDragging} onMouseMove={moveMouse}
+        className={`flex-1 flex overflow-x-auto snap-x snap-mandatory no-scrollbar flex-nowrap ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+      >
+        {paginas.map((grupo, idx) => (
+          <div key={idx} className="flex-none w-screen h-full snap-start grid grid-cols-2 grid-rows-2 gap-4 p-5 box-border">
+            {grupo.map((box) => (
+              <Link 
+                href={`/boxeador/${box.id}`}
+                key={box.id} 
+                draggable="false"
+                className="relative aspect-square bg-[#0c0c0c] rounded-[2.5rem] overflow-hidden border-2 border-white/5 active:scale-95 transition-all group shadow-[0_0_20px_rgba(0,0,0,0.5)]"
+              >
+                <div className="absolute inset-0 z-0 pointer-events-none">
+                  <img src={box.foto_url} alt={box.apodo} className="w-full h-full object-cover opacity-50 group-hover:opacity-80 transition-opacity" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
                 </div>
-
-                {/* Información */}
-                <h3 className="text-xl font-bold mb-2 group-hover:text-yellow-500">
-                  {boxeador.nombre}
-                </h3>
                 
-                <div className="mb-4">
-                  <span className="inline-block px-3 py-1 bg-gray-700 text-gray-300 text-sm rounded-full">
-                    {boxeador.estilo || 'Estilo Clásico'}
-                  </span>
+                {/* SOLO APODO - ESTILO IMPACTANTE */}
+                <div className="relative z-10 p-4 h-full flex flex-col justify-end items-center text-center">
+                  <h3 className="text-lg font-black italic uppercase text-[#00FBFF] tracking-tighter leading-tight drop-shadow-md">
+                    {box.apodo}
+                  </h3>
                 </div>
-
-                {/* Detalles */}
-                <div className="space-y-2 text-sm">
-                  {boxeador.record && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-400">Récord</span>
-                      <span className="font-bold text-yellow-500">{boxeador.record}</span>
-                    </div>
-                  )}
-                  {boxeador.nacionalidad && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-400">Nacionalidad</span>
-                      <span className="font-bold">{boxeador.nacionalidad}</span>
-                    </div>
-                  )}
-                  {boxeador.titulos && (
-                    <div className="pt-2 border-t border-gray-700">
-                      <span className="text-gray-400 text-xs">{boxeador.titulos}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-
-        {/* Si no hay resultados */}
-        {boxeadoresFiltrados.length === 0 && (
-          <div className="text-center py-20">
-            <div className="text-8xl mb-6">🔍</div>
-            <h3 className="text-2xl font-bold mb-4">NO SE ENCONTRARON RESULTADOS</h3>
-            <p className="text-gray-400 mb-8">
-              No hay boxeadores que coincidan con tu búsqueda.
-            </p>
-            <button
-              onClick={() => {
-                setSearch('');
-                setFilter('todos');
-              }}
-              className="px-6 py-3 bg-yellow-600 text-black font-bold rounded-xl hover:bg-yellow-500"
-            >
-              VER TODAS LAS LEYENDAS
-            </button>
+              </Link>
+            ))}
           </div>
-        )}
-      </div>
+        ))}
+      </main>
+
+      <footer className="py-6 bg-black border-t border-white/5 flex flex-col items-center gap-2">
+        <p className="text-[#00FBFF]/30 text-[8px] font-black uppercase tracking-[0.4em]">
+          {isDragging ? 'EXPLORANDO...' : 'DESLIZA PARA VER LEYENDAS'}
+        </p>
+      </footer>
+
+      <style jsx global>{`
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      `}</style>
     </div>
   );
 }

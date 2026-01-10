@@ -1,167 +1,82 @@
 import Link from 'next/link';
-import { Dumbbell, Trophy, Users, Zap, ArrowRight } from 'lucide-react';
-import { supabase } from '@/lib/supabaseClient';
+import Image from 'next/image';
+import { Info, ShoppingCart, RefreshCcw } from 'lucide-react';
 
-async function getDestacados() {
-  try {
-    const { data, error } = await supabase
-      .from('boxeadores')
-      .select('*')
-      .limit(4)
-      .order('nombre');
-
-    return { data: data || [], error };
-  } catch (error) {
-    return { data: [], error };
-  }
-}
-
-export default async function HomePage() {
-  const { data: boxeadoresDestacados } = await getDestacados();
-
+export default function HomePage() {
   return (
-    <div className="min-h-screen">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-gray-900 via-black to-gray-900 py-20">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center justify-center p-3 bg-yellow-500/10 rounded-full mb-6">
-              <Dumbbell className="w-8 h-8 text-yellow-500" />
-            </div>
-            
-            <h1 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter mb-6">
-              <span className="text-yellow-500">ENTRENA</span> COMO UNA<br />
-              <span className="text-white">LEYENDA</span>
+    /* Layout bloqueado para evitar scroll innecesario */
+    <div className="fixed inset-0 w-full h-full overflow-hidden flex flex-col bg-black font-sans select-none z-[9999] p-4">
+      
+      {/* HEADER: MÁXIMO CONTRASTE */}
+      <header className="relative w-full max-w-7xl mx-auto pt-6 pb-4 z-20">
+        <div className="w-full flex justify-between items-center bg-[#111]/90 backdrop-blur-xl rounded-full px-8 py-5 border border-white/10 shadow-2xl">
+          
+          <Link href="/informacion" className="p-3 bg-[#00FBFF] rounded-full shadow-[0_0_20px_rgba(0,251,255,0.8)] active:scale-90 transition-all">
+            <Info className="w-9 h-9 text-black stroke-[3.5]" />
+          </Link>
+
+          <div className="flex flex-col items-center">
+            <h1 className="text-4xl md:text-7xl font-black italic tracking-tighter leading-none text-center">
+              <span className="bg-gradient-to-b from-[#FFF000] via-[#FF8A00] to-[#FF2D00] bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(255,45,0,0.5)]">
+                LIFE FIGHTER
+              </span>
             </h1>
-            
-            <p className="text-xl text-gray-300 mb-10 max-w-2xl mx-auto">
-              Descubre las rutinas de los mayores campeones del boxeo y transforma tu entrenamiento.
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link 
-                href="/entrenar"
-                className="inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-500 hover:to-orange-500 text-black font-black text-lg rounded-xl transition-all transform hover:scale-105"
-              >
-                COMENZAR AHORA
-                <ArrowRight className="ml-3 w-5 h-5" />
-              </Link>
-              
-              <Link 
-                href="/boxeador"
-                className="inline-flex items-center justify-center px-8 py-4 bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-xl transition-all"
-              >
-                VER LEYENDAS
-              </Link>
-            </div>
           </div>
-        </div>
-      </section>
 
-      {/* Features */}
-      <section className="py-20 bg-gray-900/50">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-black text-center mb-12">
-            ¿POR QUÉ <span className="text-yellow-500">LIFEFIGHTER</span>?
-          </h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-gray-800/30 p-8 rounded-3xl border border-gray-700 card-hover">
-              <div className="w-14 h-14 bg-yellow-500/20 rounded-xl flex items-center justify-center mb-6">
-                <Trophy className="w-7 h-7 text-yellow-500" />
-              </div>
-              <h3 className="text-xl font-bold mb-4">Rutinas Auténticas</h3>
-              <p className="text-gray-400">
-                Entrena exactamente como lo hicieron los campeones, con rutinas verificadas y documentadas.
-              </p>
-            </div>
-            
-            <div className="bg-gray-800/30 p-8 rounded-3xl border border-gray-700 card-hover">
-              <div className="w-14 h-14 bg-blue-500/20 rounded-xl flex items-center justify-center mb-6">
-                <Zap className="w-7 h-7 text-blue-500" />
-              </div>
-              <h3 className="text-xl font-bold mb-4">Seguimiento Inteligente</h3>
-              <p className="text-gray-400">
-                Monitorea tu progreso, calorías quemadas y mejora tu rendimiento con análisis detallados.
-              </p>
-            </div>
-            
-            <div className="bg-gray-800/30 p-8 rounded-3xl border border-gray-700 card-hover">
-              <div className="w-14 h-14 bg-red-500/20 rounded-xl flex items-center justify-center mb-6">
-                <Users className="w-7 h-7 text-red-500" />
-              </div>
-              <h3 className="text-xl font-bold mb-4">Comunidad Activa</h3>
-              <p className="text-gray-400">
-                Únete a miles de boxeadores que comparten consejos, logros y motivación diaria.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Leyendas Destacadas */}
-      <section className="py-20">
-        <div className="container mx-auto px-4">
-          <div className="flex justify-between items-center mb-10">
-            <div>
-              <h2 className="text-3xl md:text-4xl font-black">
-                LEYENDAS <span className="text-yellow-500">DESTACADAS</span>
-              </h2>
-              <p className="text-gray-400 mt-2">Entrena con los mejores de la historia</p>
-            </div>
-            <Link 
-              href="/boxeador"
-              className="text-yellow-500 hover:text-yellow-400 font-bold flex items-center"
-            >
-              VER TODOS <ArrowRight className="ml-2 w-4 h-4" />
-            </Link>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {boxeadoresDestacados.map((boxeador) => (
-              <Link 
-                key={boxeador.id}
-                href={`/boxeador/${boxeador.id}`}
-                className="block group"
-              >
-                <div className="bg-gray-800/30 border-2 border-gray-700 rounded-2xl p-6 transition-all group-hover:border-yellow-500 group-hover:scale-[1.02] h-full">
-                  <div className="w-full h-48 bg-gradient-to-br from-gray-700 to-gray-900 rounded-xl mb-4 flex items-center justify-center">
-                    <span className="text-6xl">🥊</span>
-                  </div>
-                  
-                  <h3 className="text-xl font-bold mb-2 group-hover:text-yellow-500">
-                    {boxeador.nombre}
-                  </h3>
-                  
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-400">{boxeador.estilo}</span>
-                    <span className="text-sm font-bold text-yellow-500">{boxeador.record}</span>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Final */}
-      <section className="py-20 bg-gradient-to-r from-gray-900 to-black">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-4xl md:text-5xl font-black mb-6">
-            ¿LISTO PARA <span className="text-yellow-500">TRANSFORMARTE</span>?
-          </h2>
-          <p className="text-xl text-gray-300 mb-10 max-w-2xl mx-auto">
-            Comienza tu viaje hoy y descubre el campeón que llevas dentro.
-          </p>
-          <Link 
-            href="/entrenar"
-            className="inline-flex items-center justify-center px-10 py-5 bg-gradient-to-r from-yellow-600 via-orange-600 to-red-600 hover:from-yellow-500 hover:via-orange-500 hover:to-red-500 text-black font-black text-xl rounded-2xl transition-all transform hover:scale-105"
-          >
-            <Dumbbell className="mr-3 w-6 h-6" />
-            COMENZAR ENTRENAMIENTO GRATIS
+          {/* FEEDBACK: Vuelve a ser un link directo a su página propia */}
+          <Link href="/feedback" className="p-3 bg-[#FF4D00] rounded-full shadow-[0_0_20px_rgba(255,77,0,0.8)] active:scale-90 transition-all">
+            <RefreshCcw className="w-9 h-9 text-white stroke-[3]" />
           </Link>
         </div>
-      </section>
+      </header>
+
+      {/* MAIN: IMÁGENES CON BRILLO FULL (VIBRANTES) */}
+      <main className="flex-1 flex flex-col md:flex-row w-full max-w-7xl mx-auto h-full gap-4 pb-4">
+        
+        {/* BOTÓN LEYENDAS - BRILLO TOTAL */}
+        <Link 
+          href="/boxeador" 
+          className="flex-1 relative flex flex-col items-center justify-center bg-black rounded-[3.5rem] border-2 border-[#00FBFF]/60 group overflow-hidden transition-all duration-500 shadow-[0_0_30px_rgba(0,251,255,0.15)]"
+        >
+          <div className="absolute inset-0 z-0">
+            <Image 
+              src="https://rptbzoytslnfmofksvhk.supabase.co/storage/v1/object/public/assets_app/galeria_de_leyendas.webp" 
+              alt="Galería de Leyendas"
+              fill
+              className="object-cover opacity-100 group-hover:scale-105 transition-all duration-700"
+              priority
+            />
+            {/* Overlay eliminado/minimizado para no opacar el diseño original */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+          </div>
+        </Link>
+
+        {/* BOTÓN A ENTRENAR - BRILLO TOTAL */}
+        <Link 
+          href="/entrenar" 
+          className="flex-1 relative flex flex-col items-center justify-center bg-black rounded-[3.5rem] border-2 border-white/30 group overflow-hidden transition-all duration-500 shadow-[0_0_30px_rgba(255,255,255,0.1)]"
+        >
+          <div className="absolute inset-0 z-0">
+            <Image 
+              src="https://rptbzoytslnfmofksvhk.supabase.co/storage/v1/object/public/assets_app/a_entrenar.webp" 
+              alt="A Entrenar"
+              fill
+              className="object-cover opacity-100 group-hover:scale-105 transition-all duration-700"
+              priority
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+          </div>
+        </Link>
+      </main>
+
+      {/* FOOTER */}
+      <footer className="w-full max-w-7xl mx-auto h-24 flex justify-start items-center relative z-30">
+        <Link href="/tienda" className="active:scale-95 transition-all">
+          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#EAD8B1] to-[#D4AF37] flex items-center justify-center shadow-[0_0_30px_rgba(212,175,55,0.4)] border-4 border-white/20">
+            <ShoppingCart className="w-12 h-12 text-black stroke-[3]" />
+          </div>
+        </Link>
+      </footer>
     </div>
   );
 }
