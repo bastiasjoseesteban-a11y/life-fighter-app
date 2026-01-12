@@ -1,11 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
+    // Esto permite que Next.js cargue imágenes desde tu servidor de Supabase
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'rptbzoytslnfmofksvhk.supabase.co',
-        pathname: '/storage/v1/object/public/**',
+        hostname: '**.supabase.co', // Autoriza todos los subdominios de Supabase
       },
     ],
   },

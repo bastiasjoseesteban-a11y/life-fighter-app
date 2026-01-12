@@ -1,135 +1,138 @@
 "use client";
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { ChevronLeft, Search } from 'lucide-react';
+import { Search, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
-export default function GaleriaFinal() {
-  const [boxeadores, setBoxeadores] = useState<any[]>([]);
-  const [search, setSearch] = useState('');
+export default function GaleriaPage() {
+  const [leyendas, setLeyendas] = useState<any[]>([]);
+  const [busqueda, setBusqueda] = useState("");
   const [loading, setLoading] = useState(true);
   
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [startX, setStartX] = useState(0);
-  const [scrollLeft, setScrollLeft] = useState(0);
+  // Estado para la página actual
+  const [paginaActual, setPaginaActual] = useState(0);
+  const itemsPorPagina = 4;
 
   useEffect(() => {
-    async function cargar() {
-      // Cambio a la tabla completa
+    async function getBoxes() {
       const { data } = await supabase.from('boxeadores_completo').select('*').order('id');
-      if (data) setBoxeadores(data);
+      if (data) setLeyendas(data);
       setLoading(false);
     }
-    cargar();
+    getBoxes();
   }, []);
 
-  const startDragging = (e: React.MouseEvent) => {
-    setIsDragging(true);
-    setStartX(e.pageX - (scrollRef.current?.offsetLeft || 0));
-    setScrollLeft(scrollRef.current?.scrollLeft || 0);
-  };
-
-  const stopDragging = () => setIsDragging(false);
-
-  const moveMouse = (e: React.MouseEvent) => {
-    if (!isDragging) return;
-    e.preventDefault();
-    const x = e.pageX - (scrollRef.current?.offsetLeft || 0);
-    const walk = (x - startX) * 2; 
-    if (scrollRef.current) scrollRef.current.scrollLeft = scrollLeft - walk;
-  };
-
-  const filtrados = boxeadores.filter(b => {
-    const term = search.toLowerCase();
-    return (
-      b.nombre?.toLowerCase().includes(term) || 
-      b.apodo?.toLowerCase().includes(term) || // Buscamos también por apodo
-      b.nacionalidad?.toLowerCase().includes(term) || 
-      b.categoria?.toLowerCase().includes(term)
+  // Filtrado
+  const filtrados = useMemo(() => {
+    setPaginaActual(0); // Reiniciar a la página 1 cuando el usuario busca algo
+    const q = busqueda.toLowerCase().trim();
+    return leyendas.filter(b => 
+      (b.nombre?.toLowerCase().includes(q)) ||
+      (b.pais?.toLowerCase().includes(q)) ||
+      (b.apodo?.toLowerCase().includes(q)) ||
+      (b.categoria?.toLowerCase().includes(q))
     );
-  });
+  }, [busqueda, leyendas]);
 
-  const paginas = [];
-  for (let i = 0; i < filtrados.length; i += 4) {
-    paginas.push(filtrados.slice(i, i + 4));
-  }
+  // Cálculo de paginación
+  const totalPaginas = Math.ceil(filtrados.length / itemsPorPagina);
+  const itemsVisibles = filtrados.slice(paginaActual * itemsPorPagina, (paginaActual * itemsPorPagina) + itemsPorPagina);
 
-  if (loading) return (
-    <div className="fixed inset-0 bg-black flex items-center justify-center z-[999]">
-      <div className="text-[#00FBFF] font-black italic animate-pulse text-2xl uppercase">CARGANDO LEYENDAS...</div>
-    </div>
-  );
+  const fixImagePath = (path: string) => {
+    if (!path) return "/placeholder-boxer.jpg";
+    if (path.startsWith('http')) return path;
+    return path.startsWith('/') ? path : `/${path}`;
+  };
+
+  if (loading) return <div className="h-screen bg-black flex items-center justify-center text-[#00FBFF] font-black italic animate-pulse">CARGANDO...</div>;
 
   return (
-    <div className="fixed inset-0 bg-black text-white flex flex-col overflow-hidden font-sans z-[100] select-none">
+    <div className="h-screen w-full bg-black text-white flex flex-col p-6 overflow-hidden">
       
-      <header className="pt-12 pb-4 px-6 flex flex-col gap-5 bg-black/95 shrink-0 border-b border-white/5">
-        <div className="flex justify-between items-center">
-          <Link href="/" className="p-3 bg-white/5 rounded-full border border-white/10 active:scale-90"><ChevronLeft size={24} /></Link>
-          <div className="text-center">
-            <h1 className="text-xl font-black italic tracking-tighter uppercase leading-none m-0">
-              GALERÍA DE <br/> <span className="text-[#00FBFF] text-2xl">LEYENDAS</span>
-            </h1>
-          </div>
-          <div className="p-4 opacity-0">ADM</div>
-        </div>
-
-        <div className="relative">
-          <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-[#00FBFF] opacity-50" size={18} />
+      {/* HEADER */}
+      <header className="max-w-7xl mx-auto w-full mb-6">
+        <Link href="/" className="inline-flex items-center gap-2 text-zinc-500 font-black uppercase text-[10px] mb-4 hover:text-[#00FBFF]">
+          <ArrowLeft size={14} /> Volver
+        </Link>
+        <h1 className="text-5xl md:text-7xl font-black italic tracking-tighter uppercase mb-6 leading-none">
+          Galería de <span className="text-[#00FBFF]">Leyendas</span>
+        </h1>
+        <div className="relative max-w-md">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={20} />
           <input 
             type="text" 
-            placeholder="BUSCAR APODO, PAÍS..." 
-            value={search}
-            className="w-full bg-[#111] border-2 border-white/5 rounded-2xl py-4 pl-14 pr-6 text-sm font-bold focus:border-[#00FBFF] outline-none transition-all"
-            onChange={(e) => setSearch(e.target.value)}
+            placeholder="BUSCAR POR PAÍS, CATEGORÍA O APODO..."
+            className="w-full bg-zinc-900 border-2 border-zinc-800 rounded-full py-4 pl-12 pr-6 font-bold focus:border-[#00FBFF] outline-none transition-all"
+            onChange={(e) => setBusqueda(e.target.value)}
           />
         </div>
       </header>
 
-      <main 
-        ref={scrollRef}
-        onMouseDown={startDragging} onMouseLeave={stopDragging} onMouseUp={stopDragging} onMouseMove={moveMouse}
-        className={`flex-1 flex overflow-x-auto snap-x snap-mandatory no-scrollbar flex-nowrap ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
-      >
-        {paginas.map((grupo, idx) => (
-          <div key={idx} className="flex-none w-screen h-full snap-start grid grid-cols-2 grid-rows-2 gap-4 p-5 box-border">
-            {grupo.map((box) => (
+      {/* GRILLA 2X2 FIJA */}
+      <main className="flex-1 w-full max-w-7xl mx-auto">
+        {itemsVisibles.length === 0 ? (
+          <div className="h-full flex items-center justify-center text-zinc-800 font-black italic text-2xl uppercase">Sin resultados</div>
+        ) : (
+          <div className="grid grid-cols-2 grid-rows-2 gap-4 md:gap-8 h-full pb-6">
+            {itemsVisibles.map((b) => (
               <Link 
-                href={`/boxeador/${box.id}`}
-                key={box.id} 
-                draggable="false"
-                className="relative aspect-square bg-[#0c0c0c] rounded-[2.5rem] overflow-hidden border-2 border-white/5 active:scale-95 transition-all group shadow-[0_0_20px_rgba(0,0,0,0.5)]"
+                key={b.id} 
+                href={`/boxeador/${b.id}`}
+                className="relative group overflow-hidden rounded-[2.5rem] border-2 border-zinc-900 hover:border-[#00FBFF] transition-all bg-[#111]"
               >
-                <div className="absolute inset-0 z-0 pointer-events-none">
-                  <img src={box.foto_url} alt={box.apodo} className="w-full h-full object-cover opacity-50 group-hover:opacity-80 transition-opacity" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
-                </div>
-                
-                {/* SOLO APODO - ESTILO IMPACTANTE */}
-                <div className="relative z-10 p-4 h-full flex flex-col justify-end items-center text-center">
-                  <h3 className="text-lg font-black italic uppercase text-[#00FBFF] tracking-tighter leading-tight drop-shadow-md">
-                    {box.apodo}
-                  </h3>
+                <Image 
+                  src={fixImagePath(b.foto_url)} 
+                  alt={b.nombre} 
+                  fill 
+                  className="object-cover group-hover:scale-105 transition-transform duration-700 brightness-75 group-hover:brightness-100"
+                  unoptimized
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80" />
+                <div className="absolute bottom-6 left-6 right-6">
+                  <p className="text-[#00FBFF] font-black italic uppercase text-xl md:text-3xl tracking-tighter drop-shadow-xl">
+                    "{b.apodo || 'The Champ'}"
+                  </p>
                 </div>
               </Link>
             ))}
           </div>
-        ))}
+        )}
       </main>
 
-      <footer className="py-6 bg-black border-t border-white/5 flex flex-col items-center gap-2">
-        <p className="text-[#00FBFF]/30 text-[8px] font-black uppercase tracking-[0.4em]">
-          {isDragging ? 'EXPLORANDO...' : 'DESLIZA PARA VER LEYENDAS'}
-        </p>
-      </footer>
+      {/* BARRA DE NAVEGACIÓN (Paginación) */}
+      <nav className="max-w-7xl mx-auto w-full flex items-center justify-center gap-4 py-4 bg-black/80 backdrop-blur-md">
+        <button 
+          onClick={() => setPaginaActual(p => Math.max(0, p - 1))}
+          disabled={paginaActual === 0}
+          className="p-3 bg-zinc-900 rounded-full disabled:opacity-20 hover:bg-[#00FBFF] hover:text-black transition-all"
+        >
+          <ChevronLeft size={24} />
+        </button>
 
-      <style jsx global>{`
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      `}</style>
+        <div className="flex items-center gap-2">
+          {Array.from({ length: totalPaginas }).map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setPaginaActual(i)}
+              className={`w-10 h-10 rounded-full font-black transition-all ${paginaActual === i ? 'bg-[#00FBFF] text-black scale-110 shadow-[0_0_15px_rgba(0,251,255,0.5)]' : 'bg-zinc-900 text-zinc-500 hover:text-white'}`}
+            >
+              {i + 1}
+            </button>
+          ))}
+        </div>
+
+        <button 
+          onClick={() => setPaginaActual(p => Math.min(totalPaginas - 1, p + 1))}
+          disabled={paginaActual === totalPaginas - 1 || totalPaginas === 0}
+          className="p-3 bg-zinc-900 rounded-full disabled:opacity-20 hover:bg-[#00FBFF] hover:text-black transition-all"
+        >
+          <ChevronRight size={24} />
+        </button>
+      </nav>
+
     </div>
   );
 }

@@ -1,126 +1,114 @@
 "use client";
-import { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useParams, useRouter } from 'next/navigation';
-import { ChevronLeft, Globe, Target, Trophy, Ruler, Scale } from 'lucide-react';
+import { ArrowLeft, Trophy, Ruler, Weight, Activity, Globe, Award } from 'lucide-react';
+import Image from 'next/image';
 
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!, 
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-export default function FichaBoxeador() {
+export default function DetalleBoxeador() {
   const { id } = useParams();
   const router = useRouter();
-  const [boxeador, setBoxeador] = useState<any>(null);
+  const [b, setBoxeador] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function cargarDetalle() {
+    async function getDetail() {
       const { data, error } = await supabase
         .from('boxeadores_completo')
         .select('*')
         .eq('id', id)
         .single();
-
+      
       if (data) setBoxeador(data);
       setLoading(false);
     }
-    if (id) cargarDetalle();
+    getDetail();
   }, [id]);
 
+  // Función para corregir las rutas de las imágenes (igual que en la galería)
+  const fixImagePath = (path: string) => {
+    if (!path) return "/placeholder-boxer.jpg";
+    if (path.startsWith('http')) return path;
+    return path.startsWith('/') ? path : `/${path}`;
+  };
+
   if (loading) return (
-    <div className="min-h-screen bg-black flex items-center justify-center">
-      <div className="text-[#00FBFF] font-black animate-pulse">CARGANDO EXPEDIENTE...</div>
+    <div className="h-screen bg-black flex items-center justify-center text-[#00FBFF] font-black italic animate-pulse">
+      CARGANDO FICHA TÉCNICA...
     </div>
   );
 
-  if (!boxeador) return <div className="text-white">Boxeador no encontrado</div>;
+  if (!b) return <div className="h-screen bg-black text-white flex items-center justify-center">Boxeador no encontrado</div>;
 
   return (
-    <div className="min-h-screen bg-black text-white pb-10">
-      {/* Header / Imagen Superior */}
-      <div className="relative h-[40vh] w-full">
+    <div className="min-h-screen bg-black text-white p-4 md:p-10 font-sans">
+      <div className="max-w-6xl mx-auto">
+        
+        {/* BOTÓN VOLVER */}
         <button 
-          onClick={() => router.back()}
-          className="absolute top-12 left-6 z-20 p-3 bg-black/50 backdrop-blur-md rounded-full border border-white/10"
+          onClick={() => router.back()} 
+          className="mb-8 flex items-center gap-2 text-[#00FBFF] font-black uppercase text-xs hover:opacity-70 transition-all"
         >
-          <ChevronLeft size={24} />
+          <ArrowLeft size={18} /> Volver a la Galería
         </button>
-        
-        <img 
-          src={boxeador.foto_url} 
-          alt={boxeador.nombre}
-          className="w-full h-full object-cover opacity-70"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+          
+          {/* COLUMNA IZQUIERDA: IMÁGEN GRANDE */}
+          <div className="relative h-[400px] md:h-[600px] rounded-[3.5rem] overflow-hidden border-2 border-[#00FBFF]/20 shadow-[0_0_50px_rgba(0,251,255,0.1)]">
+            <Image 
+              src={fixImagePath(b.foto_url)} 
+              alt={b.nombre} 
+              fill 
+              className="object-cover"
+              priority
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60" />
+          </div>
+
+          {/* COLUMNA DERECHA: DATOS TÉCNICOS */}
+          <div className="flex flex-col">
+            <h1 className="text-6xl md:text-8xl font-black italic uppercase tracking-tighter leading-none mb-2">
+              {b.nombre}
+            </h1>
+            <p className="text-[#00FBFF] text-3xl font-black italic mb-10 uppercase tracking-tight">
+              "{b.apodo}"
+            </p>
+
+            {/* GRILLA DE INFORMACIÓN EXTRAÍDA DE TU CSV */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <InfoBox icon={<Globe size={20}/>} label="País" value={b.pais || b.nacionalidad} />
+              <InfoBox icon={<Activity size={20}/>} label="Categoría" value={b.categoria} />
+              <InfoBox icon={<Weight size={20}/>} label="Peso Detalle" value={b.peso_detalle} />
+              <InfoBox icon={<Ruler size={20}/>} label="Altura / Alcance" value={b.altura_alcance} />
+              <InfoBox icon={<Trophy size={20}/>} label="Récord Profesional" value={b.record} />
+              <InfoBox icon={<Award size={20}/>} label="Títulos" value={b.titulos} />
+            </div>
+
+            {/* BOTÓN DE ACCIÓN FINAL */}
+            <button className="mt-10 w-full bg-[#00FBFF] text-black py-6 rounded-[2rem] font-black uppercase italic text-xl shadow-[0_0_30px_rgba(0,251,255,0.4)] hover:scale-[1.02] active:scale-95 transition-all">
+              EMPEZAR ENTRENAMIENTO
+            </button>
+          </div>
+        </div>
       </div>
+    </div>
+  );
+}
 
-      {/* Contenido de la Ficha */}
-      <div className="px-6 -mt-12 relative z-10 flex flex-col gap-6">
-        
-        {/* Títulos Principales */}
-        <div className="border-l-4 border-[#00FBFF] pl-4">
-          <h1 className="text-4xl font-black italic uppercase tracking-tighter leading-none">
-            {boxeador.nombre}
-          </h1>
-          <p className="text-[#00FBFF] font-black text-lg tracking-[0.2em] mt-1">
-            {boxeador.apodo}
-          </p>
-        </div>
-
-        {/* Grid de Stats Técnicos */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-[#111] p-4 rounded-3xl border border-white/5">
-            <div className="flex items-center gap-2 mb-1">
-              <Globe size={14} className="text-[#00FBFF] opacity-50"/>
-              <span className="text-[10px] text-white/40 font-black uppercase">Origen</span>
-            </div>
-            <div className="text-sm font-bold">{boxeador.nacionalidad}</div>
-          </div>
-
-          <div className="bg-[#111] p-4 rounded-3xl border border-white/5">
-            <div className="flex items-center gap-2 mb-1">
-              <Target size={14} className="text-[#00FBFF] opacity-50"/>
-              <span className="text-[10px] text-white/40 font-black uppercase">División</span>
-            </div>
-            <div className="text-sm font-bold uppercase">{boxeador.categoria}</div>
-          </div>
-
-          <div className="bg-[#111] p-4 rounded-3xl border border-white/5">
-            <div className="flex items-center gap-2 mb-1">
-              <Scale size={14} className="text-[#00FBFF] opacity-50"/>
-              <span className="text-[10px] text-white/40 font-black uppercase">Peso</span>
-            </div>
-            <div className="text-sm font-bold italic">{boxeador.peso_detalle}</div>
-          </div>
-
-          <div className="bg-[#111] p-4 rounded-3xl border border-white/5">
-            <div className="flex items-center gap-2 mb-1">
-              <Ruler size={14} className="text-[#00FBFF] opacity-50"/>
-              <span className="text-[10px] text-white/40 font-black uppercase">Alcance</span>
-            </div>
-            <div className="text-sm font-bold italic">{boxeador.altura_alcance}</div>
-          </div>
-        </div>
-
-        {/* Récord Destacado */}
-        <div className="bg-[#00FBFF] p-6 rounded-[2rem] text-black shadow-[0_10px_30px_rgba(0,251,255,0.2)]">
-          <span className="text-[11px] font-black uppercase block mb-1 opacity-70 tracking-widest">Récord Profesional</span>
-          <div className="text-4xl font-black italic leading-none">{boxeador.record}</div>
-        </div>
-
-        {/* Palmarés / Títulos */}
-        <div className="bg-[#111] p-5 rounded-[2rem] border border-white/5">
-          <div className="flex items-center gap-2 mb-3 text-[#00FBFF]">
-            <Trophy size={18} />
-            <span className="text-xs font-black uppercase tracking-widest">Campeonatos y Logros</span>
-          </div>
-          <p className="text-sm font-medium leading-relaxed text-white/80">
-            {boxeador.titulos}
-          </p>
-        </div>
-
+// Componente pequeño para las filas de información
+function InfoBox({ icon, label, value }: { icon: any, label: string, value: string }) {
+  return (
+    <div className="bg-zinc-900/40 border border-white/5 p-5 rounded-[2rem] flex items-center gap-4">
+      <div className="text-[#00FBFF]">{icon}</div>
+      <div>
+        <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em]">{label}</p>
+        <p className="font-bold text-lg uppercase leading-tight">{value || "---"}</p>
       </div>
     </div>
   );

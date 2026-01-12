@@ -1,298 +1,81 @@
-"use client";
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
-import { 
-  Play, Pause, ChevronLeft, RotateCcw, SkipForward, 
-  Flame, Volume2, VolumeX, Activity, Quote,
-  ArrowUpCircle, ArrowDownCircle, Target, ShieldCheck, Zap, Brain
-} from 'lucide-react';
+'use client';
 
-// CONEXIÓN A SUPABASE
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!, 
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import { supabase } from '@/lib/supabaseClient';
+import EntrenamientoCompleto from '../components/EntrenamientoCompleto';
 
-type NivelBoxeo = 'Principiante' | 'Intermedio' | 'Avanzado';
-
-interface BloqueRutina {
-  fase: string;
+interface Boxeador {
+  id: number;
   nombre: string;
-  detalle: string;
-  duracion: number;
-  color: string;
-  round?: number;
-  totalRounds?: number;
+  apodo: string;
+  pais: string;
+  categoria: string;
+  peso_detalle: string;
+  altura_alcance: string;
+  record: string;
+  titulos: string;
+  foto_url: string;
+  combinaciones: string;
+  entrenamiento: string;
+  alimentacion: string;
+  biografia: string;
+  instruccion_tecnica: string;
+  filosofia_vida: string;
+  contexto_historico: string;
+  legado_historico: string;
+  video_tecnico: string;
 }
 
-export default function EntrenamientoPage() {
-  const { id } = useParams();
+export default function BoxeadorDetallePage() {
+  const params = useParams();
   const router = useRouter();
-  const searchParams = useSearchParams();
-
-  const [boxeador, setBoxeador] = useState<any>(null);
-  const [nivel, setNivel] = useState<NivelBoxeo>((searchParams.get('nivel') as NivelBoxeo) || 'Principiante');
-  const [rutina, setRutina] = useState<BloqueRutina[]>([]);
-  const [indiceActual, setIndiceActual] = useState(0);
-  const [segundos, setSegundos] = useState(0);
-  const [activo, setActivo] = useState(false);
-  const [calorias, setCalorias] = useState(0);
-  const [isMuted, setIsMuted] = useState(false);
-  const [mostrarPopUp, setMostrarPopUp] = useState(false);
-  const [tipoAjuste, setTipoAjuste] = useState<'subir' | 'bajar' | null>(null);
-  const [completado, setCompletado] = useState(false);
+  const [boxeador, setBoxeador] = useState<Boxeador | null>(null);
+  const [activeSection, setActiveSection] = useState<'conocer' | 'rutina'>('conocer');
+  const [activeTab, setActiveTab] = useState<string>('biografia');
   const [loading, setLoading] = useState(true);
-  
-  // NUEVOS ESTADOS
-  const [mostrarIntro, setMostrarIntro] = useState(true);
-  const [verFilosofia, setVerFilosofia] = useState(true);
 
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  useEffect(() => {
+    if (params.id) {
+      fetchBoxeador();
+    }
+  }, [params.id]);
 
-  const INFO_NIVEL = {
-    'Principiante': { 
-      filosofia: "No corras si no sabes caminar. Mejor 3 golpes perfectos que 30 malos.", 
-      calFactor: 0.12,
-      rounds: 3,
-      tiempoRound: 120,
-      descanso: 30
-    },
-    'Intermedio': { 
-      filosofia: "La técnica te lleva a la pelea, la condición física te saca victorioso.", 
-      calFactor: 0.18,
-      rounds: 6,
-      tiempoRound: 180,
-      descanso: 60
-    },
-    'Avanzado': { 
-      filosofia: "El campeón se hace los días que no tiene ganas de entrenar. Tu rival está entrenando ahora.", 
-      calFactor: 0.25,
-      rounds: 12,
-      tiempoRound: 180,
-      descanso: 60
+  const fetchBoxeador = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('boxeadores_completo')
+        .select('*')
+        .eq('id', params.id)
+        .single();
+
+      if (error) throw error;
+      setBoxeador(data);
+    } catch (error) {
+      console.error('Error fetching boxeador:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // DATA DE INTRO
-  const DATA_INTRO = {
-    'Principiante': {
-      titulo: "RUTINA PARA PRINCIPIANTE",
-      rango: "(0-6 meses)",
-      objetivo: "Aprender los fundamentos y crear hábito.",
-      frecuencia: "3 días por semana (ej: Lunes, Miércoles, Viernes)",
-      duracion: "60-75 minutos"
-    },
-    'Intermedio': {
-      titulo: "RUTINA PARA BOXEADOR INTERMEDIO",
-      rango: "(6 meses - 2 años)",
-      objetivo: "Pulir técnica, aumentar resistencia y poder.",
-      frecuencia: "4 días por semana (ej: Lunes, Martes, Jueves, Viernes)",
-      duracion: "90-120 minutos"
-    },
-    'Avanzado': {
-      titulo: "RUTINA PARA BOXEADOR AVANZADO",
-      rango: "(2+ años)",
-      objetivo: "Optimización del rendimiento, trabajo estratégico.",
-      frecuencia: "5-6 días por semana (ciclos de carga/descarga)",
-      duracion: "120-150 minutos"
-    }
-  };
-
-  // CONTROL DE INTRO (15 SEGUNDOS)
-  useEffect(() => {
-    setMostrarIntro(true);
-    const timer = setTimeout(() => {
-      setMostrarIntro(false);
-    }, 15000);
-    return () => clearTimeout(timer);
-  }, [nivel]);
-
-  // AUDIO MEJORADO CON PARÁMETROS OPTIMIZADOS
-  const decir = useCallback((texto: string) => {
-    if (isMuted || typeof window === 'undefined') return;
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(texto);
-    u.lang = 'es-AR';
-    u.rate = 0.9;
-    u.pitch = 1.1;
-    u.volume = 1;
-    window.speechSynthesis.speak(u);
-  }, [isMuted]);
-
-  // SALTAR BLOQUE
-  const saltarBloque = useCallback(() => {
-    if (indiceActual < rutina.length - 1) {
-      const next = indiceActual + 1;
-      setIndiceActual(next);
-      setSegundos(rutina[next].duracion);
-      setActivo(false);
-      decir(`Siguiente: ${rutina[next].nombre}`);
-    } else {
-      setCompletado(true);
-      decir("Entrenamiento completado! Eres un campeón.");
-    }
-  }, [indiceActual, rutina, decir]);
-
-  // GENERADOR DE RUTINA
-  const generarRutina = useCallback((boxer: any) => {
-    const pasos: BloqueRutina[] = [];
-    const cfg = INFO_NIVEL[nivel];
-    
-    for(let i=1; i <= cfg.rounds; i++) {
-      pasos.push({ 
-        fase: 'Calentamiento', 
-        nombre: `Cuerda RD ${i}`, 
-        detalle: 'Ritmo constante. Mantén los codos pegados al cuerpo.', 
-        duracion: cfg.tiempoRound, 
-        color: '#FFD700', 
-        round: i, 
-        totalRounds: cfg.rounds 
-      });
-      pasos.push({ 
-        fase: 'Descanso', 
-        nombre: 'Descanso', 
-        detalle: 'Respira profundo por la nariz.', 
-        duracion: cfg.descanso, 
-        color: '#1a1a1a' 
-      });
-    }
-
-    pasos.push({ 
-      fase: 'Técnica', 
-      nombre: 'Sombra', 
-      detalle: boxer.instruccion_tecnica || 'Mantén la guardia alta y mueve los pies constantemente.', 
-      duracion: 180, 
-      color: '#00FBFF' 
-    });
-    pasos.push({ 
-      fase: 'Descanso', 
-      nombre: 'Descanso', 
-      detalle: 'Hidratación leve. Visualiza tu técnica.', 
-      duracion: 60, 
-      color: '#1a1a1a' 
-    });
-
-    for(let i=1; i <= cfg.rounds; i++) {
-      pasos.push({ 
-        fase: 'Específico', 
-        nombre: `Saco: ${boxer.nombre}`, 
-        detalle: boxer.combinaciones || 'Jab-Jab-Derecha. Salida lateral después del combo.', 
-        duracion: 180, 
-        color: '#FF3131', 
-        round: i, 
-        totalRounds: cfg.rounds 
-      });
-      pasos.push({ 
-        fase: 'Descanso', 
-        nombre: 'Descanso', 
-        detalle: 'Respira. Mentaliza el próximo round.', 
-        duracion: 60, 
-        color: '#1a1a1a' 
-      });
-    }
-
-    pasos.push({ 
-      fase: 'Estiramiento', 
-      nombre: 'Vuelta a la calma', 
-      detalle: 'Estiramiento estático. Relaja cuello y espalda. 30s por músculo.', 
-      duracion: 300, 
-      color: '#39FF14' 
-    });
-
-    return pasos;
-  }, [nivel]);
-
-  // CARGAR BOXEADOR DESDE SUPABASE
-  useEffect(() => {
-    async function cargarBoxeador() {
-      try {
-        setLoading(true);
-        const { data, error } = await supabase
-          .from('boxeadores_completo')
-          .select('*')
-          .eq('id', id)
-          .single();
-        
-        if (error) {
-          console.error('Error cargando boxeador:', error);
-          return;
-        }
-
-        if (data) {
-          setBoxeador(data);
-          const r = generarRutina(data);
-          setRutina(r);
-          setSegundos(r[0].duracion);
-        }
-      } catch (error) {
-        console.error('Error:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    
-    if (id) {
-      cargarBoxeador();
-    }
-  }, [id, generarRutina]);
-
-  // INSTRUCCIÓN DE VOZ AL CAMBIAR DE BLOQUE
-  useEffect(() => {
-    if (rutina[indiceActual] && activo) {
-      if (rutina[indiceActual].fase === 'Descanso') {
-        decir("Descanso. Respira profundo.");
-      } else {
-        decir(`${rutina[indiceActual].nombre}. ${rutina[indiceActual].detalle}`);
-      }
-    }
-  }, [indiceActual, activo, rutina, decir]);
-
-  // CRONÓMETRO
-  useEffect(() => {
-    if (activo && segundos > 0) {
-      timerRef.current = setInterval(() => {
-        setSegundos(s => {
-          if (s === 11) decir("Últimos 10 segundos!");
-          if (s === 4) decir("3, 2, 1");
-          return s - 1;
-        });
-        setCalorias(c => c + INFO_NIVEL[nivel].calFactor);
-      }, 1000);
-    } else if (segundos === 0 && activo) {
-      saltarBloque();
-    }
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [activo, segundos, nivel, saltarBloque, decir]);
-
-  // LOADING STATE
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-center">
-          <div className="relative">
-            <div className="w-24 h-24 border-4 border-[#00FBFF] border-t-transparent rounded-full animate-spin"></div>
-          </div>
-          <p className="mt-6 text-xl font-bold text-white">PREPARANDO ENTRENAMIENTO</p>
-          <p className="text-gray-400 mt-2">Cargando rutina del campeón...</p>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-black flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-red-600"></div>
       </div>
     );
   }
 
-  // ERROR STATE
-  if (!boxeador || rutina.length === 0) {
+  if (!boxeador) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center p-6">
-        <div className="text-center">
-          <div className="text-8xl mb-6">⚠️</div>
-          <h2 className="text-3xl font-bold text-white mb-4">BOXEADOR NO ENCONTRADO</h2>
-          <p className="text-gray-400 mb-8">No se pudo cargar la información del campeón.</p>
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-black flex items-center justify-center">
+        <div className="text-center text-white">
+          <h2 className="text-2xl font-bold mb-4">Boxeador no encontrado</h2>
           <button
             onClick={() => router.push('/entrenar')}
-            className="px-8 py-4 bg-[#00FBFF] text-black font-bold rounded-xl hover:bg-cyan-400 transition"
+            className="bg-red-600 hover:bg-red-700 px-6 py-3 rounded-lg"
           >
-            Volver a la lista
+            Volver
           </button>
         </div>
       </div>
@@ -300,293 +83,225 @@ export default function EntrenamientoPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col font-sans overflow-hidden select-none">
-      
-      {/* PANTALLA DE INTRO (15 SEGUNDOS) */}
-      {mostrarIntro && (
-        <div className="fixed inset-0 z-[300] bg-black flex flex-col items-center justify-center p-8 animate-in fade-in duration-500">
-          <div className="max-w-md w-full border border-[#00FBFF]/30 p-10 rounded-[3rem] bg-zinc-900/50 backdrop-blur-xl">
-            <div className="mb-8 flex justify-center">
-              <div className="bg-[#00FBFF] text-black px-4 py-1 rounded-full font-black text-[10px] uppercase tracking-widest">
-                Preparación de Combate
-              </div>
-            </div>
-            
-            <h2 className="text-[#00FBFF] text-2xl font-black italic uppercase leading-none mb-1 text-center">
-              {DATA_INTRO[nivel].titulo}
-            </h2>
-            <p className="text-white/40 text-sm font-bold mb-8 text-center uppercase tracking-tighter">
-              {DATA_INTRO[nivel].rango}
-            </p>
-            
-            <div className="space-y-6">
-              <div>
-                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Objetivo</p>
-                <p className="text-lg font-bold italic leading-tight">{DATA_INTRO[nivel].objetivo}</p>
-              </div>
-              <div className="flex gap-6">
-                <div className="flex-1">
-                  <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Frecuencia</p>
-                  <p className="text-sm font-bold uppercase">{DATA_INTRO[nivel].frecuencia}</p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-black p-4">
+      <div className="max-w-7xl mx-auto">
+        {/* Header con foto y datos básicos */}
+        <div className="bg-black/50 backdrop-blur-sm rounded-xl p-6 mb-6 border border-gray-800">
+          <button
+            onClick={() => router.push('/entrenar')}
+            className="text-gray-400 hover:text-white mb-4 flex items-center gap-2"
+          >
+            ← Volver al equipo
+          </button>
+
+          <div className="flex flex-col md:flex-row gap-6">
+            {/* Foto */}
+            <div className="w-full md:w-64 h-64 bg-gray-800 rounded-xl overflow-hidden">
+              {boxeador.foto_url ? (
+                <img
+                  src={boxeador.foto_url}
+                  alt={boxeador.nombre}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-8xl">
+                  🥊
                 </div>
-                <div className="w-px bg-white/10" />
-                <div>
-                  <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Duración</p>
-                  <p className="text-sm font-bold uppercase">{DATA_INTRO[nivel].duracion}</p>
-                </div>
-              </div>
+              )}
             </div>
-            
-            <div className="mt-10 flex flex-col items-center gap-4">
-              <div className="w-full h-1 bg-zinc-800 rounded-full overflow-hidden">
-                <div className="h-full bg-[#00FBFF] animate-progress-timer" style={{ animationDuration: '15s' }} />
-              </div>
-              <button 
-                onClick={() => setMostrarIntro(false)}
-                className="text-[10px] font-black uppercase text-white/20 hover:text-[#00FBFF] transition-colors"
-              >
-                Saltar intro (Enter)
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* BARRA DE PROGRESO GRUESA (DOBLE DE GROSOR) */}
-      <div className="flex w-full h-3 bg-zinc-900 border-b border-white/5">
-        {rutina.map((p, i) => (
-          <div 
-            key={i} 
-            className="h-full border-r border-black/30 transition-all duration-700"
-            style={{ 
-              width: `${100/rutina.length}%`, 
-              backgroundColor: i < indiceActual ? p.color : i === indiceActual ? '#FFF' : '#222',
-              boxShadow: i === indiceActual ? `0 0 15px ${p.color}` : 'none'
-            }}
-          />
-        ))}
-      </div>
-
-      {/* HEADER XL CON STATS MÁS GRANDES */}
-      <nav className="p-6 flex justify-between items-center bg-zinc-950/90 backdrop-blur-xl z-50">
-        <button onClick={() => router.back()} className="p-2 active:scale-90">
-          <ChevronLeft size={32}/>
-        </button>
-        
-        <div className="flex gap-6">
-          <div className="bg-zinc-900 px-6 py-3 rounded-[1.5rem] border border-white/5 flex flex-col items-center min-w-[100px]">
-            <Flame size={18} className="text-orange-500 mb-1"/>
-            <span className="text-xl font-black tabular-nums leading-none">
-              {Math.floor(calorias)}
-            </span>
-            <span className="text-[10px] text-zinc-500 uppercase font-black">Kcal</span>
-          </div>
-          <div className="bg-zinc-900 px-6 py-3 rounded-[1.5rem] border border-white/5 flex flex-col items-center min-w-[100px]">
-            <Zap size={18} className="text-[#00FBFF] mb-1"/>
-            <span className="text-xl font-black uppercase tracking-tighter leading-none">
-              {nivel}
-            </span>
-            <span className="text-[10px] text-zinc-500 uppercase font-black">Nivel</span>
-          </div>
-        </div>
-        
-        <button onClick={() => setIsMuted(!isMuted)} className="p-2">
-          {isMuted ? <VolumeX size={28} className="text-red-500"/> : <Volume2 size={28} className="text-zinc-400"/>}
-        </button>
-      </nav>
-
-      {/* MONITOR PRINCIPAL */}
-      <main className="flex-1 flex flex-col items-center justify-center p-8 text-center relative">
-        <div className="mb-6 inline-flex items-center gap-2 bg-zinc-900/80 px-5 py-2 rounded-full border border-white/10 shadow-xl">
-          <Activity size={14} className="text-[#00FBFF] animate-pulse"/>
-          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400">
-            {rutina[indiceActual].fase} 
-            {rutina[indiceActual].round ? ` · RD ${rutina[indiceActual].round}/${rutina[indiceActual].totalRounds}` : ''}
-          </span>
-        </div>
-
-        <h1 className="text-5xl font-black italic uppercase tracking-tighter mb-4 leading-none">
-          {rutina[indiceActual].nombre}
-        </h1>
-
-        <div className="text-[140px] font-black italic leading-none tracking-tighter mb-8 tabular-nums drop-shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
-          {Math.floor(segundos/60)}:{(segundos%60).toString().padStart(2,'0')}
-        </div>
-
-        <div className="bg-zinc-900/40 p-6 rounded-[2.5rem] border border-white/5 w-full max-w-md mb-12 backdrop-blur-md">
-          <p className="text-[9px] font-black text-[#00FBFF] uppercase tracking-[0.2em] mb-3 flex items-center justify-center gap-2">
-            <ShieldCheck size={14}/> Instrucción del Boxeador
-          </p>
-          <p className="text-lg font-medium italic text-zinc-200 leading-tight">
-            {rutina[indiceActual].detalle}
-          </p>
-        </div>
-
-        {/* CONTROLES CON AUDIO AL PRESIONAR PLAY */}
-        <div className="flex items-center gap-8">
-          <button 
-            onClick={() => { setTipoAjuste('subir'); setMostrarPopUp(true); }} 
-            className="p-4 bg-zinc-900/50 rounded-full text-zinc-600 hover:text-white transition-colors border border-white/5 active:scale-90"
-          >
-            <ArrowUpCircle size={28}/>
-          </button>
-          
-          <button 
-            onClick={() => setSegundos(rutina[indiceActual].duracion)} 
-            className="p-3 text-zinc-700 hover:text-white transition-all active:scale-90"
-          >
-            <RotateCcw size={24}/>
-          </button>
-
-          <button 
-            onClick={() => {
-              if (!activo) {
-                decir(rutina[indiceActual].detalle);
-              }
-              setActivo(!activo);
-            }} 
-            className="w-24 h-24 bg-white text-black rounded-full flex items-center justify-center shadow-[0_15px_60px_rgba(255,255,255,0.2)] active:scale-90 transition-all"
-          >
-            {activo ? <Pause size={48} fill="black"/> : <Play size={48} fill="black" className="ml-2"/>}
-          </button>
-
-          <button 
-            onClick={saltarBloque} 
-            className="p-3 text-[#00FBFF] hover:scale-110 transition-transform active:scale-95"
-          >
-            <SkipForward size={32} fill="currentColor"/>
-          </button>
-
-          <button 
-            onClick={() => { setTipoAjuste('bajar'); setMostrarPopUp(true); }} 
-            className="p-4 bg-zinc-900/50 rounded-full text-zinc-600 hover:text-white transition-colors border border-white/5 active:scale-90"
-          >
-            <ArrowDownCircle size={28}/>
-          </button>
-        </div>
-      </main>
-
-      {/* FOOTER FLOTANTE OPTIMIZADO */}
-      {verFilosofia && boxeador && (
-        <div className="fixed bottom-8 left-0 right-0 z-[50] flex justify-center animate-in slide-in-from-bottom duration-700">
-          <div className="relative w-full max-w-sm mx-6 bg-[#00FBFF] text-black p-6 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
-            
-            <button 
-              onClick={() => setVerFilosofia(false)}
-              className="absolute top-4 right-4 w-7 h-7 bg-black/10 rounded-full flex items-center justify-center hover:bg-black/20 transition-colors"
-            >
-              <RotateCcw size={12} className="rotate-45" />
-            </button>
-            
-            <div className="flex items-center gap-2 mb-2 opacity-70">
-              <Quote size={12} fill="black" />
-              <span className="font-black uppercase text-[8px] tracking-[0.2em]">
-                Filosofía de {boxeador.nombre}
-              </span>
-            </div>
-            
-            <p className="text-xl font-black italic leading-tight tracking-tighter mb-4">
-              &quot;{boxeador.filosofia_vida || 'La disciplina es el puente entre metas y logros.'}&quot;
-            </p>
-            
-            <div className="bg-black/10 p-4 rounded-2xl">
-              <div className="flex items-center gap-2 mb-1">
-                <Brain size={14} />
-                <p className="text-[9px] font-black uppercase tracking-widest">
-                  Consejo de Nivel {nivel}
-                </p>
-              </div>
-              <p className="text-sm font-bold italic leading-snug">
-                &quot;{INFO_NIVEL[nivel].filosofia}&quot;
+            {/* Info básica */}
+            <div className="flex-1">
+              <h1 className="text-4xl font-bold text-white mb-2">
+                {boxeador.nombre}
+              </h1>
+              <p className="text-2xl text-red-400 font-semibold mb-4">
+                "{boxeador.apodo}"
               </p>
-            </div>
-            
-          </div>
-        </div>
-      )}
-
-      {/* POP-UP CAMBIO DE NIVEL */}
-      {mostrarPopUp && (
-        <div className="fixed inset-0 z-[100] bg-black/98 flex items-center justify-center p-8 backdrop-blur-2xl">
-          <div className="text-center max-w-sm">
-            <div className="flex justify-center mb-8">
-              {tipoAjuste === 'subir' 
-                ? <ArrowUpCircle size={64} className="text-[#00FBFF] animate-bounce"/> 
-                : <ArrowDownCircle size={64} className="text-red-600 animate-pulse"/>
-              }
-            </div>
-            <p className="text-2xl font-serif italic text-white/80 mb-12 leading-snug">
-              {tipoAjuste === 'subir' 
-                ? '¿Estás seguro? No te apresures; igual no hay problema, vuelve cuando quieras.' 
-                : 'Sientes que no es el momento; no te preocupes, ya volverás.'}
-            </p>
-            <div className="flex flex-col gap-4">
-              <button 
-                onClick={() => {
-                  const niveles: NivelBoxeo[] = ['Principiante', 'Intermedio', 'Avanzado'];
-                  const idx = niveles.indexOf(nivel);
-                  const next = tipoAjuste === 'subir' 
-                    ? niveles[Math.min(idx + 1, 2)] 
-                    : niveles[Math.max(idx - 1, 0)];
-                  setNivel(next);
-                  setMostrarPopUp(false);
-                  const nuevaRutina = generarRutina(boxeador);
-                  setRutina(nuevaRutina);
-                  setIndiceActual(0);
-                  setSegundos(nuevaRutina[0].duracion);
-                  setActivo(false);
-                  setCalorias(0);
-                }}
-                className="w-full bg-[#00FBFF] text-black py-5 rounded-3xl font-black uppercase italic text-xl shadow-[0_20px_40px_rgba(0,251,255,0.3)] active:scale-95 transition-all"
-              >
-                Confirmar Cambio
-              </button>
-              <button 
-                onClick={() => setMostrarPopUp(false)} 
-                className="text-zinc-600 font-bold uppercase tracking-widest text-[10px] py-4"
-              >
-                Cancelar y Seguir
-              </button>
+              
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-400">País</p>
+                  <p className="text-white font-semibold">🌍 {boxeador.pais}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400">Categoría</p>
+                  <p className="text-white font-semibold">{boxeador.categoria}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400">Peso</p>
+                  <p className="text-white font-semibold">⚖️ {boxeador.peso_detalle}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400">Altura / Alcance</p>
+                  <p className="text-white font-semibold">📏 {boxeador.altura_alcance}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400">Récord</p>
+                  <p className="text-white font-semibold">🥊 {boxeador.record}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400">Títulos</p>
+                  <p className="text-white font-semibold">🏆 {boxeador.titulos}</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      )}
 
-      {/* PANTALLA DE VICTORIA */}
-      {completado && (
-        <div className="fixed inset-0 bg-[#00FBFF] z-[200] flex flex-col items-center justify-center p-12 text-black text-center">
-          <div className="bg-black p-8 rounded-full mb-10 shadow-2xl animate-bounce">
-            <Target size={80} className="text-[#00FBFF]" />
-          </div>
-          <h1 className="text-8xl font-black italic tracking-tighter leading-none mb-4">
-            ¡KO TÉCNICO!
-          </h1>
-          <p className="font-black uppercase tracking-[0.4em] text-xs opacity-60 mb-8">
-            Has completado la rutina de {boxeador.nombre}
-          </p>
-          <div className="bg-black/10 p-6 rounded-2xl mb-12">
-            <p className="text-lg font-bold mb-2">Estadísticas de la sesión:</p>
-            <p className="text-4xl font-black">{Math.floor(calorias)} KCAL</p>
-            <p className="text-sm uppercase tracking-widest mt-2 opacity-70">Nivel: {nivel}</p>
-          </div>
-          <button 
-            onClick={() => router.push('/entrenar')} 
-            className="bg-black text-white px-16 py-6 rounded-3xl font-black uppercase italic text-2xl shadow-2xl active:scale-95 transition-all hover:bg-zinc-900"
+        {/* Tabs de Sección Principal */}
+        <div className="flex gap-4 mb-6">
+          <button
+            onClick={() => setActiveSection('conocer')}
+            className={`flex-1 py-4 px-6 rounded-xl font-bold text-lg transition-all ${
+              activeSection === 'conocer'
+                ? 'bg-red-600 text-white shadow-lg shadow-red-500/50 scale-105'
+                : 'bg-black/50 text-gray-400 hover:bg-gray-800 backdrop-blur-sm'
+            }`}
           >
-            Volver al Gimnasio
+            📖 Conocer al Luchador
+          </button>
+          <button
+            onClick={() => setActiveSection('rutina')}
+            className={`flex-1 py-4 px-6 rounded-xl font-bold text-lg transition-all ${
+              activeSection === 'rutina'
+                ? 'bg-red-600 text-white shadow-lg shadow-red-500/50 scale-105'
+                : 'bg-black/50 text-gray-400 hover:bg-gray-800 backdrop-blur-sm'
+            }`}
+          >
+            🥊 Rutina de Hoy
           </button>
         </div>
-      )}
 
-      <style jsx global>{`
-        @keyframes progress-timer {
-          from { width: 100%; }
-          to { width: 0%; }
-        }
-        .animate-progress-timer {
-          animation: progress-timer linear forwards;
-        }
-      `}</style>
+        {/* Contenido según sección activa */}
+        {activeSection === 'conocer' ? (
+          <div className="bg-black/50 backdrop-blur-sm rounded-xl p-6 border border-gray-800">
+            {/* Tabs de contenido */}
+            <div className="flex flex-wrap gap-2 mb-6">
+              {[
+                { id: 'biografia', label: '📜 Biografía', icon: '📜' },
+                { id: 'tecnica', label: '🥋 Técnica', icon: '🥋' },
+                { id: 'entrenamiento', label: '💪 Entrenamiento', icon: '💪' },
+                { id: 'alimentacion', label: '🍎 Alimentación', icon: '🍎' },
+                { id: 'combinaciones', label: '🥊 Combinaciones', icon: '🥊' },
+                { id: 'filosofia', label: '🧠 Filosofía', icon: '🧠' },
+                { id: 'contexto', label: '📅 Contexto', icon: '📅' },
+                { id: 'legado', label: '👑 Legado', icon: '👑' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                    activeTab === tab.id
+                      ? 'bg-red-600 text-white'
+                      : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                  }`}
+                >
+                  {tab.icon} {tab.label.split(' ')[1]}
+                </button>
+              ))}
+            </div>
+
+            {/* Contenido del tab */}
+            <div className="bg-gray-900/50 rounded-lg p-6 min-h-96">
+              {activeTab === 'biografia' && (
+                <div>
+                  <h2 className="text-2xl font-bold text-white mb-4">📜 Biografía</h2>
+                  <p className="text-gray-300 leading-relaxed whitespace-pre-line">
+                    {boxeador.biografia || 'No hay información disponible.'}
+                  </p>
+                </div>
+              )}
+
+              {activeTab === 'tecnica' && (
+                <div>
+                  <h2 className="text-2xl font-bold text-white mb-4">🥋 Instrucción Técnica</h2>
+                  <p className="text-gray-300 leading-relaxed whitespace-pre-line">
+                    {boxeador.instruccion_tecnica || 'No hay información disponible.'}
+                  </p>
+                  
+                  {boxeador.video_tecnico && (
+                    <div className="mt-6">
+                      <h3 className="text-xl font-bold text-white mb-3">🎥 Video Técnico</h3>
+                      <a
+                        href={boxeador.video_tecnico}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-semibold transition-all"
+                      >
+                        ▶️ Ver Video en YouTube
+                      </a>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'entrenamiento' && (
+                <div>
+                  <h2 className="text-2xl font-bold text-white mb-4">💪 Entrenamiento</h2>
+                  <p className="text-gray-300 leading-relaxed whitespace-pre-line">
+                    {boxeador.entrenamiento || 'No hay información disponible.'}
+                  </p>
+                </div>
+              )}
+
+              {activeTab === 'alimentacion' && (
+                <div>
+                  <h2 className="text-2xl font-bold text-white mb-4">🍎 Alimentación</h2>
+                  <p className="text-gray-300 leading-relaxed whitespace-pre-line">
+                    {boxeador.alimentacion || 'No hay información disponible.'}
+                  </p>
+                </div>
+              )}
+
+              {activeTab === 'combinaciones' && (
+                <div>
+                  <h2 className="text-2xl font-bold text-white mb-4">🥊 Combinaciones</h2>
+                  <div className="bg-red-900/20 border border-red-700 rounded-lg p-4 mb-4">
+                    <p className="text-red-300 font-mono text-lg">
+                      {boxeador.combinaciones || 'No hay información disponible.'}
+                    </p>
+                  </div>
+                  <p className="text-gray-400 text-sm">
+                    * Estas son las combinaciones características de {boxeador.nombre}
+                  </p>
+                </div>
+              )}
+
+              {activeTab === 'filosofia' && (
+                <div>
+                  <h2 className="text-2xl font-bold text-white mb-4">🧠 Filosofía de Vida</h2>
+                  <div className="bg-gradient-to-r from-purple-900/20 to-blue-900/20 border border-purple-700 rounded-lg p-6 mb-4">
+                    <p className="text-purple-200 text-xl italic leading-relaxed">
+                      "{boxeador.filosofia_vida || 'No hay información disponible.'}"
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'contexto' && (
+                <div>
+                  <h2 className="text-2xl font-bold text-white mb-4">📅 Contexto Histórico</h2>
+                  <p className="text-gray-300 leading-relaxed whitespace-pre-line">
+                    {boxeador.contexto_historico || 'No hay información disponible.'}
+                  </p>
+                </div>
+              )}
+
+              {activeTab === 'legado' && (
+                <div>
+                  <h2 className="text-2xl font-bold text-white mb-4">👑 Legado Histórico</h2>
+                  <p className="text-gray-300 leading-relaxed whitespace-pre-line">
+                    {boxeador.legado_historico || 'No hay información disponible.'}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <EntrenamientoCompleto boxeadorId={Number(params.id)} />
+        )}
+      </div>
     </div>
   );
 }
