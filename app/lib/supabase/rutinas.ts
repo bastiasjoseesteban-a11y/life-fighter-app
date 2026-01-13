@@ -1,5 +1,5 @@
 // app/lib/supabase/rutinas.ts
-import { supabase } from '../supabaseClient';
+import { supabase } from '@/lib/supabaseClient';
 
 export interface Rutina {
   id: number;

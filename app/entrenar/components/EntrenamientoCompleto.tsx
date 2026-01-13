@@ -25,9 +25,9 @@ interface Boxeador {
   id: number;
   nombre: string;
   apodo: string;
-  filosofa_vida: string;
-  instruccion_tecnica: string;
-  combinaciones: string;
+  filosofia_vida?: string;  // CORREGIDO: era 'filosofa_vida'
+  instruccion_tecnica?: string;
+  combinaciones?: string;
 }
 
 interface EntrenamientoCompletoProps {
@@ -178,7 +178,7 @@ export default function EntrenamientoCompleto({ boxeadorId }: EntrenamientoCompl
         setLoading(true);
         const { data, error } = await supabase
           .from('boxeadores_completo')
-          .select('id, nombre, apodo, filosofia_vida, instruccion_tecnica, combinaciones')
+          .select('id, nombre, apodo, filosofia_vida, instruccion_tecnica, combinaciones') // CORREGIDO: 'filosofia_vida'
           .eq('id', boxeadorId)
           .single();
         
