@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { 
-  Play, Pause, ChevronLeft, RotateCcw, SkipForward, 
+  Play, Pause, RotateCcw, SkipForward, 
   Flame, Volume2, VolumeX, Activity,
   ArrowUpCircle, ArrowDownCircle, Target, ShieldCheck, Zap, Brain, Quote
 } from 'lucide-react';
@@ -25,7 +24,7 @@ interface Boxeador {
   id: number;
   nombre: string;
   apodo: string;
-  filosofia_vida?: string;  // CORREGIDO: era 'filosofa_vida'
+  filosofia_vida?: string;
   instruccion_tecnica?: string;
   combinaciones?: string;
 }
@@ -35,7 +34,6 @@ interface EntrenamientoCompletoProps {
 }
 
 export default function EntrenamientoCompleto({ boxeadorId }: EntrenamientoCompletoProps) {
-  const router = useRouter();
   const [boxeador, setBoxeador] = useState<Boxeador | null>(null);
   const [nivel, setNivel] = useState<NivelBoxeo>('Principiante');
   const [rutina, setRutina] = useState<BloqueRutina[]>([]);
@@ -48,7 +46,7 @@ export default function EntrenamientoCompleto({ boxeadorId }: EntrenamientoCompl
   const [tipoAjuste, setTipoAjuste] = useState<'subir' | 'bajar' | null>(null);
   const [completado, setCompletado] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [verFilosofia, setVerFilosofia] = useState(true);
+  const [verFilosofia, setVerFilosofia] = useState(false);
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -178,7 +176,7 @@ export default function EntrenamientoCompleto({ boxeadorId }: EntrenamientoCompl
         setLoading(true);
         const { data, error } = await supabase
           .from('boxeadores_completo')
-          .select('id, nombre, apodo, filosofia_vida, instruccion_tecnica, combinaciones') // CORREGIDO: 'filosofia_vida'
+          .select('id, nombre, apodo, filosofia_vida, instruccion_tecnica, combinaciones')
           .eq('id', boxeadorId)
           .single();
         
@@ -234,13 +232,13 @@ export default function EntrenamientoCompleto({ boxeadorId }: EntrenamientoCompl
   // LOADING STATE
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex items-center justify-center h-64 rounded-2xl bg-black/40 backdrop-blur-sm border border-zinc-800">
         <div className="text-center">
           <div className="relative">
-            <div className="w-24 h-24 border-4 border-[#00FBFF] border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-16 h-16 border-3 border-[#00FBFF] border-t-transparent rounded-full animate-spin"></div>
           </div>
-          <p className="mt-6 text-xl font-bold text-white">PREPARANDO ENTRENAMIENTO</p>
-          <p className="text-gray-400 mt-2">Cargando rutina del campeón...</p>
+          <p className="mt-4 text-base font-bold text-white">PREPARANDO ENTRENAMIENTO</p>
+          <p className="text-gray-400 mt-1 text-sm">Cargando rutina del campeón...</p>
         </div>
       </div>
     );
@@ -249,20 +247,20 @@ export default function EntrenamientoCompleto({ boxeadorId }: EntrenamientoCompl
   // ERROR STATE
   if (!boxeador || rutina.length === 0) {
     return (
-      <div className="flex items-center justify-center p-6">
+      <div className="flex items-center justify-center p-6 rounded-2xl bg-black/40 backdrop-blur-sm border border-zinc-800">
         <div className="text-center">
-          <div className="text-8xl mb-6">??</div>
-          <h2 className="text-3xl font-bold text-white mb-4">ERROR</h2>
-          <p className="text-gray-400 mb-8">No se pudo cargar la información del campeón.</p>
+          <div className="text-6xl mb-4">🥊</div>
+          <h2 className="text-xl font-bold text-white mb-2">ERROR</h2>
+          <p className="text-gray-400">No se pudo cargar la información del campeón.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col font-sans overflow-hidden select-none">
+    <div className="w-full bg-black/40 backdrop-blur-sm rounded-2xl border border-zinc-800 overflow-hidden">
       {/* BARRA DE PROGRESO */}
-      <div className="flex w-full h-3 bg-zinc-900 border-b border-white/5">
+      <div className="flex w-full h-2 bg-zinc-900/80">
         {rutina.map((p, i) => (
           <div 
             key={i} 
@@ -270,83 +268,96 @@ export default function EntrenamientoCompleto({ boxeadorId }: EntrenamientoCompl
             style={{ 
               width: `${100/rutina.length}%`, 
               backgroundColor: i < indiceActual ? p.color : i === indiceActual ? '#FFF' : '#222',
-              boxShadow: i === indiceActual ? `0 0 15px ${p.color}` : 'none'
+              boxShadow: i === indiceActual ? `0 0 8px ${p.color}` : 'none'
             }}
           />
         ))}
       </div>
 
-      {/* HEADER */}
-      <nav className="p-6 flex justify-between items-center bg-zinc-950/90 backdrop-blur-xl z-50">
-        <button onClick={() => router.back()} className="p-2 active:scale-90">
-          <ChevronLeft size={32}/>
-        </button>
-        
-        <div className="flex gap-6">
-          <div className="bg-zinc-900 px-6 py-3 rounded-[1.5rem] border border-white/5 flex flex-col items-center min-w-[100px]">
-            <Flame size={18} className="text-orange-500 mb-1"/>
-            <span className="text-xl font-black tabular-nums leading-none">
+      {/* HEADER COMPACTO */}
+      <div className="p-4 flex justify-between items-center bg-zinc-900/50 border-b border-zinc-800">
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setVerFilosofia(!verFilosofia)}
+            className="p-2 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition-colors"
+          >
+            <Quote size={18} className="text-[#00FBFF]" />
+          </button>
+          
+          <div className="bg-zinc-800 px-3 py-2 rounded-lg border border-zinc-700 flex items-center gap-2">
+            <Flame size={16} className="text-orange-500"/>
+            <span className="text-base font-black tabular-nums leading-none">
               {Math.floor(calorias)}
             </span>
-            <span className="text-[10px] text-zinc-500 uppercase font-black">Kcal</span>
-          </div>
-          <div className="bg-zinc-900 px-6 py-3 rounded-[1.5rem] border border-white/5 flex flex-col items-center min-w-[100px]">
-            <Zap size={18} className="text-[#00FBFF] mb-1"/>
-            <span className="text-xl font-black uppercase tracking-tighter leading-none">
-              {nivel}
-            </span>
-            <span className="text-[10px] text-zinc-500 uppercase font-black">Nivel</span>
+            <span className="text-[10px] text-zinc-400 uppercase font-black">Kcal</span>
           </div>
         </div>
         
-        <button onClick={() => setIsMuted(!isMuted)} className="p-2">
-          {isMuted ? <VolumeX size={28} className="text-red-500"/> : <Volume2 size={28} className="text-zinc-400"/>}
-        </button>
-      </nav>
+        <div className="flex items-center gap-3">
+          <div className="bg-zinc-800 px-3 py-2 rounded-lg border border-zinc-700 flex items-center gap-2">
+            <Zap size={16} className="text-[#00FBFF]"/>
+            <span className="text-sm font-bold uppercase tracking-tighter">
+              {nivel}
+            </span>
+          </div>
+          
+          <button 
+            onClick={() => setIsMuted(!isMuted)} 
+            className="p-2 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition-colors"
+          >
+            {isMuted ? <VolumeX size={20} className="text-red-500"/> : <Volume2 size={20} className="text-zinc-300"/>}
+          </button>
+        </div>
+      </div>
 
-      {/* MONITOR PRINCIPAL */}
-      <main className="flex-1 flex flex-col items-center justify-center p-8 text-center relative">
-        <div className="mb-6 inline-flex items-center gap-2 bg-zinc-900/80 px-5 py-2 rounded-full border border-white/10 shadow-xl">
-          <Activity size={14} className="text-[#00FBFF] animate-pulse"/>
-          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400">
+      {/* MONITOR PRINCIPAL - COMPACTO */}
+      <div className="p-4 flex flex-col items-center text-center">
+        {/* INDICADOR DE FASE */}
+        <div className="mb-3 inline-flex items-center gap-2 bg-zinc-900/80 px-3 py-1 rounded-full border border-white/10">
+          <Activity size={12} className="text-[#00FBFF] animate-pulse"/>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-300">
             {rutina[indiceActual].fase} 
             {rutina[indiceActual].round ? ` · RD ${rutina[indiceActual].round}/${rutina[indiceActual].totalRounds}` : ''}
           </span>
         </div>
 
-        <h1 className="text-5xl font-black italic uppercase tracking-tighter mb-4 leading-none">
+        {/* NOMBRE DEL EJERCICIO */}
+        <h1 className="text-xl font-bold text-white mb-3">
           {rutina[indiceActual].nombre}
         </h1>
 
-        <div className="text-[140px] font-black italic leading-none tracking-tighter mb-8 tabular-nums drop-shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
+        {/* CRONÓMETRO GRANDE */}
+        <div className="text-[60px] font-black italic leading-none tracking-tighter mb-4 tabular-nums text-white">
           {Math.floor(segundos/60)}:{(segundos%60).toString().padStart(2,'0')}
         </div>
 
-        <div className="bg-zinc-900/40 p-6 rounded-[2.5rem] border border-white/5 w-full max-w-md mb-12 backdrop-blur-md">
-          <p className="text-[9px] font-black text-[#00FBFF] uppercase tracking-[0.2em] mb-3 flex items-center justify-center gap-2">
+        {/* INSTRUCCIÓN */}
+        <div className="bg-zinc-900/40 p-4 rounded-xl border border-white/5 w-full mb-6">
+          <p className="text-xs font-bold text-[#00FBFF] uppercase tracking-wider mb-2 flex items-center justify-center gap-2">
             <ShieldCheck size={14}/> Instrucción del Boxeador
           </p>
-          <p className="text-lg font-medium italic text-zinc-200 leading-tight">
+          <p className="text-sm text-zinc-200 leading-tight">
             {rutina[indiceActual].detalle}
           </p>
         </div>
 
-        {/* CONTROLES */}
-        <div className="flex items-center gap-8">
+        {/* CONTROLES COMPACTOS */}
+        <div className="flex items-center justify-center gap-4 w-full">
           <button 
             onClick={() => { setTipoAjuste('subir'); setMostrarPopUp(true); }} 
-            className="p-4 bg-zinc-900/50 rounded-full text-zinc-600 hover:text-white transition-colors border border-white/5 active:scale-90"
+            className="p-3 bg-zinc-900/50 rounded-xl text-zinc-400 hover:text-white transition-all border border-zinc-800 hover:border-[#00FBFF]/30"
           >
-            <ArrowUpCircle size={28}/>
+            <ArrowUpCircle size={22}/>
           </button>
           
           <button 
             onClick={() => setSegundos(rutina[indiceActual].duracion)} 
-            className="p-3 text-zinc-700 hover:text-white transition-all active:scale-90"
+            className="p-3 bg-zinc-900/50 rounded-xl text-zinc-400 hover:text-white transition-all border border-zinc-800"
           >
-            <RotateCcw size={24}/>
+            <RotateCcw size={20}/>
           </button>
 
+          {/* BOTÓN PLAY/PAUSE CENTRAL */}
           <button 
             onClick={() => {
               if (!activo) {
@@ -354,82 +365,81 @@ export default function EntrenamientoCompleto({ boxeadorId }: EntrenamientoCompl
               }
               setActivo(!activo);
             }} 
-            className="w-24 h-24 bg-white text-black rounded-full flex items-center justify-center shadow-[0_15px_60px_rgba(255,255,255,0.2)] active:scale-90 transition-all"
+            className="w-16 h-16 bg-gradient-to-r from-[#FF4D00] to-[#FF8A00] text-white rounded-full flex items-center justify-center shadow-lg shadow-[#FF4D00]/30 active:scale-95 transition-transform"
           >
-            {activo ? <Pause size={48} fill="black"/> : <Play size={48} fill="black" className="ml-2"/>}
+            {activo ? <Pause size={28} fill="white"/> : <Play size={28} fill="white" className="ml-1"/>}
           </button>
 
           <button 
             onClick={saltarBloque} 
-            className="p-3 text-[#00FBFF] hover:scale-110 transition-transform active:scale-95"
+            className="p-3 bg-zinc-900/50 rounded-xl text-[#00FBFF] hover:scale-110 transition-all border border-zinc-800 hover:border-[#00FBFF]/30"
           >
-            <SkipForward size={32} fill="currentColor"/>
+            <SkipForward size={20} fill="currentColor"/>
           </button>
 
           <button 
             onClick={() => { setTipoAjuste('bajar'); setMostrarPopUp(true); }} 
-            className="p-4 bg-zinc-900/50 rounded-full text-zinc-600 hover:text-white transition-colors border border-white/5 active:scale-90"
+            className="p-3 bg-zinc-900/50 rounded-xl text-zinc-400 hover:text-white transition-all border border-zinc-800 hover:border-red-500/30"
           >
-            <ArrowDownCircle size={28}/>
+            <ArrowDownCircle size={22}/>
           </button>
         </div>
-      </main>
+      </div>
 
-      {/* FOOTER FLOTANTE CON FILOSOFÍA */}
+      {/* FILOSOFÍA - POPUP */}
       {verFilosofia && boxeador && (
-        <div className="fixed bottom-8 left-0 right-0 z-[50] flex justify-center animate-in slide-in-from-bottom duration-700">
-          <div className="relative w-full max-w-sm mx-6 bg-[#00FBFF] text-black p-6 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
-            
-            <button 
-              onClick={() => setVerFilosofia(false)}
-              className="absolute top-4 right-4 w-7 h-7 bg-black/10 rounded-full flex items-center justify-center hover:bg-black/20 transition-colors"
-            >
-              <RotateCcw size={12} className="rotate-45" />
-            </button>
-            
-            <div className="flex items-center gap-2 mb-2 opacity-70">
-              <Quote size={12} fill="black" />
-              <span className="font-black uppercase text-[8px] tracking-[0.2em]">
-                Filosofía de {boxeador.nombre}
-              </span>
+        <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-6">
+          <div className="bg-gradient-to-br from-zinc-900 to-black rounded-2xl p-6 max-w-sm w-full border border-zinc-800 shadow-2xl">
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center gap-2">
+                <Quote size={16} className="text-[#00FBFF]"/>
+                <span className="text-sm font-bold text-white">Filosofía de {boxeador.nombre}</span>
+              </div>
+              <button 
+                onClick={() => setVerFilosofia(false)}
+                className="p-2 hover:bg-zinc-800 rounded-lg transition-colors"
+              >
+                <span className="text-zinc-400">✕</span>
+              </button>
             </div>
             
-            <p className="text-xl font-black italic leading-tight tracking-tighter mb-4">
-              "{boxeador.filosofia_vida || 'La disciplina es el puente entre metas y logros.'}"
-            </p>
-            
-            <div className="bg-black/10 p-4 rounded-2xl">
-              <div className="flex items-center gap-2 mb-1">
-                <Brain size={14} />
-                <p className="text-[9px] font-black uppercase tracking-widest">
-                  Consejo de Nivel {nivel}
-                </p>
-              </div>
-              <p className="text-sm font-bold italic leading-snug">
-                "{INFO_NIVEL[nivel].filosofia}"
+            <div className="bg-gradient-to-r from-[#00FBFF]/10 to-cyan-900/10 border border-[#00FBFF]/20 rounded-xl p-4 mb-4">
+              <p className="text-[#00FBFF] text-base italic leading-relaxed">
+                "{boxeador.filosofia_vida || 'La disciplina es el puente entre metas y logros.'}"
               </p>
             </div>
             
+            <div className="bg-zinc-900/50 p-4 rounded-xl">
+              <div className="flex items-center gap-2 mb-2">
+                <Brain size={14} className="text-amber-400"/>
+                <p className="text-xs font-bold text-amber-400 uppercase">
+                  Consejo de Nivel {nivel}
+                </p>
+              </div>
+              <p className="text-sm text-white font-medium">
+                "{INFO_NIVEL[nivel].filosofia}"
+              </p>
+            </div>
           </div>
         </div>
       )}
 
       {/* POP-UP CAMBIO DE NIVEL */}
       {mostrarPopUp && (
-        <div className="fixed inset-0 z-[100] bg-black/98 flex items-center justify-center p-8 backdrop-blur-2xl">
-          <div className="text-center max-w-sm">
-            <div className="flex justify-center mb-8">
+        <div className="fixed inset-0 z-[100] bg-black/98 flex items-center justify-center p-6">
+          <div className="bg-gradient-to-br from-zinc-900 to-black rounded-2xl p-6 max-w-sm w-full border border-zinc-800 shadow-2xl">
+            <div className="flex justify-center mb-6">
               {tipoAjuste === 'subir' 
-                ? <ArrowUpCircle size={64} className="text-[#00FBFF] animate-bounce"/> 
-                : <ArrowDownCircle size={64} className="text-red-600 animate-pulse"/>
+                ? <ArrowUpCircle size={48} className="text-[#00FBFF]"/> 
+                : <ArrowDownCircle size={48} className="text-red-500"/>
               }
             </div>
-            <p className="text-2xl font-serif italic text-white/80 mb-12 leading-snug">
+            <p className="text-lg font-medium text-white/90 mb-6 text-center">
               {tipoAjuste === 'subir' 
-                ? '¿Estás seguro? No te apresures; igual no hay problema, vuelve cuando quieras.' 
-                : 'Sientes que no es el momento; no te preocupes, ya volverás.'}
+                ? '¿Subir de nivel? ¡Demuestra que estás listo!' 
+                : '¿Bajar de nivel? No hay problema, puedes volver cuando quieras.'}
             </p>
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3">
               <button 
                 onClick={() => {
                   const niveles: NivelBoxeo[] = ['Principiante', 'Intermedio', 'Avanzado'];
@@ -446,43 +456,49 @@ export default function EntrenamientoCompleto({ boxeadorId }: EntrenamientoCompl
                   setActivo(false);
                   setCalorias(0);
                 }}
-                className="w-full bg-[#00FBFF] text-black py-5 rounded-3xl font-black uppercase italic text-xl shadow-[0_20px_40px_rgba(0,251,255,0.3)] active:scale-95 transition-all"
+                className="w-full bg-gradient-to-r from-[#00FBFF] to-[#0088FF] text-black py-4 rounded-xl font-bold text-sm shadow-lg shadow-[#00FBFF]/30 active:scale-95 transition-all"
               >
                 Confirmar Cambio
               </button>
               <button 
                 onClick={() => setMostrarPopUp(false)} 
-                className="text-zinc-600 font-bold uppercase tracking-widest text-[10px] py-4"
+                className="w-full bg-zinc-800 text-white py-4 rounded-xl font-bold text-sm border border-zinc-700"
               >
-                Cancelar y Seguir
+                Cancelar
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* PANTALLA DE VICTORIA */}
+      {/* PANTALLA DE COMPLETADO */}
       {completado && (
-        <div className="fixed inset-0 bg-[#00FBFF] z-[200] flex flex-col items-center justify-center p-12 text-black text-center">
-          <div className="bg-black p-8 rounded-full mb-10 shadow-2xl animate-bounce">
-            <Target size={80} className="text-[#00FBFF]" />
+        <div className="fixed inset-0 z-[100] bg-gradient-to-br from-[#00FBFF] to-cyan-600 flex flex-col items-center justify-center p-6">
+          <div className="bg-black/20 p-8 rounded-full mb-6 backdrop-blur-sm">
+            <Target size={60} className="text-white" />
           </div>
-          <h1 className="text-8xl font-black italic tracking-tighter leading-none mb-4">
-            ¡KO TÉCNICO!
+          <h1 className="text-3xl font-black italic text-white mb-3 text-center">
+            ¡ENTRENAMIENTO COMPLETADO!
           </h1>
-          <p className="font-black uppercase tracking-[0.4em] text-xs opacity-60 mb-8">
-            Has completado la rutina de {boxeador.nombre}
+          <p className="text-sm font-bold uppercase tracking-widest text-white/80 mb-6 text-center">
+            Rutina de {boxeador.nombre}
           </p>
-          <div className="bg-black/10 p-6 rounded-2xl mb-12">
-            <p className="text-lg font-bold mb-2">Estadísticas de la sesión:</p>
-            <p className="text-4xl font-black">{Math.floor(calorias)} KCAL</p>
-            <p className="text-sm uppercase tracking-widest mt-2 opacity-70">Nivel: {nivel}</p>
+          <div className="bg-white/10 p-6 rounded-2xl mb-8 backdrop-blur-sm">
+            <p className="text-lg font-bold text-white mb-2">Estadísticas:</p>
+            <p className="text-4xl font-black text-white">{Math.floor(calorias)} KCAL</p>
+            <p className="text-sm text-white/80 mt-2">Nivel: {nivel}</p>
           </div>
           <button 
-            onClick={() => router.push('/entrenar')} 
-            className="bg-black text-white px-16 py-6 rounded-3xl font-black uppercase italic text-2xl shadow-2xl active:scale-95 transition-all hover:bg-zinc-900"
+            onClick={() => {
+              setCompletado(false);
+              setIndiceActual(0);
+              setSegundos(rutina[0].duracion);
+              setActivo(false);
+              setCalorias(0);
+            }} 
+            className="w-full bg-black text-white py-4 rounded-xl font-bold text-lg shadow-2xl active:scale-95 transition-all"
           >
-            Volver al Gimnasio
+            Repetir Entrenamiento
           </button>
         </div>
       )}

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
-import { Search, Star, StarOff, X, MapPin, Trophy, Zap } from 'lucide-react';
+import { Search, Star, StarOff, Filter, X, MapPin, Trophy, Zap } from 'lucide-react';
 import Image from 'next/image';
 
 interface Boxeador {
@@ -117,7 +117,7 @@ export default function EquipoTab() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px]">
+      <div className="flex flex-col items-center justify-center min-h-[400px] p-4">
         <div className="relative">
           <div className="w-20 h-20 border-3 border-[#00FBFF] border-t-transparent rounded-full animate-spin mb-4"></div>
           <div className="absolute inset-0 flex items-center justify-center">
@@ -130,8 +130,8 @@ export default function EquipoTab() {
   }
 
   return (
-    <div className="space-y-4">
-      {/* BUSCADOR Y FILTROS */}
+    <div className="max-w-[414px] mx-auto space-y-4">
+      {/* HEADER Y FILTROS */}
       <div className="space-y-3">
         {/* BUSCADOR */}
         <div className="relative">
@@ -182,27 +182,23 @@ export default function EquipoTab() {
             </button>
           ))}
         </div>
+      </div>
 
-        {/* CONTADOR Y LIMPIAR FILTROS */}
-        <div className="flex justify-between items-center">
-          <span className="text-zinc-400 text-sm">
-            Mostrando <span className="text-white font-bold">{filteredBoxeadores.length}</span> de {boxeadores.length}
+      {/* CONTADOR DE RESULTADOS */}
+      <div className="flex justify-between items-center text-sm px-1">
+        <span className="text-zinc-400">
+          Mostrando <span className="text-white font-bold">{filteredBoxeadores.length}</span> de {boxeadores.length}
+        </span>
+        {filteredBoxeadores.length > 0 && (
+          <span className="text-[10px] text-zinc-500">
+            Ordenado por: <span className="text-[#00FBFF]">Nombre</span>
           </span>
-          
-          {(searchTerm || selectedCategories.length > 0 || showFavoritesOnly) && (
-            <button
-              onClick={clearFilters}
-              className="text-xs text-[#FF4D00] hover:underline"
-            >
-              Limpiar filtros
-            </button>
-          )}
-        </div>
+        )}
       </div>
 
       {/* LISTA DE BOXEADORES - DISEÑO VERTICAL */}
       {filteredBoxeadores.length === 0 ? (
-        <div className="bg-gradient-to-br from-zinc-900/50 to-black/50 backdrop-blur-sm rounded-2xl p-8 text-center border border-zinc-800 mt-6 flex flex-col items-center justify-center min-h-[300px]">
+        <div className="bg-gradient-to-br from-zinc-900/50 to-black/50 backdrop-blur-sm rounded-2xl p-8 text-center border border-zinc-800 min-h-[200px] flex flex-col items-center justify-center">
           <div className="text-5xl mb-4">🥊</div>
           <h3 className="text-white font-bold text-base mb-2">
             {searchTerm ? 'No se encontraron resultados' : 'Sin boxeadores'}
@@ -235,7 +231,7 @@ export default function EquipoTab() {
               >
                 {boxeador.foto_url ? (
                   <Image
-                    src={`${boxeador.foto_url}?width=400&height=400&quality=90&format=webp`}
+                    src={`${boxeador.foto_url}?width=200&height=200&quality=90&format=webp`}
                     alt={boxeador.nombre}
                     fill
                     sizes="(max-width: 414px) 50vw, 25vw"
@@ -261,10 +257,10 @@ export default function EquipoTab() {
                       e.stopPropagation();
                       toggleFavorite(boxeador.id);
                     }}
-                    className="w-5 h-5 flex items-center justify-center hover:scale-110 transition-transform"
+                    className="w-5 h-5 flex items-center justify-center"
                   >
                     <Star 
-                      size={12} 
+                      size={10} 
                       className={boxeador.isFavorito ? "text-[#FF4D00]" : "text-zinc-400"} 
                       fill={boxeador.isFavorito ? "currentColor" : "none"} 
                     />
@@ -277,26 +273,44 @@ export default function EquipoTab() {
                 </p>
                 
                 {/* DETALLES */}
-                <div className="flex justify-between items-center text-[10px] mb-1">
+                <div className="flex justify-between items-center text-[10px]">
                   <div className="flex items-center gap-1">
-                    <MapPin size={9} className="text-zinc-500" />
-                    <span className="text-zinc-400 truncate max-w-[60px]">{boxeador.pais}</span>
+                    <MapPin size={8} className="text-zinc-500" />
+                    <span className="text-zinc-400">{boxeador.pais}</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <Trophy size={9} className="text-amber-400" />
+                    <Trophy size={8} className="text-amber-400" />
                     <span className="text-white font-bold">{boxeador.record}</span>
                   </div>
                 </div>
                 
                 {/* CATEGORÍA */}
-                <div className="text-center">
-                  <span className="text-zinc-400 text-[10px] bg-zinc-900/50 px-2 py-0.5 rounded-full">
-                    {boxeador.categoria}
-                  </span>
+                <div className="text-center mt-1">
+                  <span className="text-zinc-400 text-[10px]">{boxeador.categoria}</span>
                 </div>
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* PIE DE PÁGINA */}
+      {filteredBoxeadores.length > 0 && (
+        <div className="pt-3 border-t border-zinc-800">
+          <div className="flex items-center justify-center gap-4 text-xs text-zinc-500">
+            <div className="flex items-center gap-1">
+              <div className="w-1.5 h-1.5 bg-[#00FBFF] rounded-full"></div>
+              <span>Total: {filteredBoxeadores.length}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-1.5 h-1.5 bg-[#FF4D00] rounded-full"></div>
+              <span>Favoritos: {filteredBoxeadores.filter(b => b.isFavorito).length}</span>
+            </div>
+          </div>
+          
+          <p className="text-center text-[10px] text-zinc-600 mt-2">
+            💡 Toca en cualquier boxeador para ver su entrenamiento
+          </p>
         </div>
       )}
     </div>

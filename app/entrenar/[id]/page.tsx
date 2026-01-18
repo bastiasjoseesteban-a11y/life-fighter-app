@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import EntrenamientoCompleto from '../components/EntrenamientoCompleto';
+import Link from 'next/link';
+import { ArrowLeft, MapPin, Scale, Weight, Trophy, Award } from 'lucide-react';
+import Image from 'next/image';
 
 interface Boxeador {
   id: number;
@@ -61,21 +64,24 @@ export default function BoxeadorDetallePage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-black flex items-center justify-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-red-600"></div>
+        <div className="flex flex-col items-center">
+          <div className="w-20 h-20 border-3 border-[#00FBFF] border-t-transparent rounded-full animate-spin mb-4"></div>
+          <p className="text-[#00FBFF] font-bold text-sm">CARGANDO...</p>
+        </div>
       </div>
     );
   }
 
   if (!boxeador) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-black flex items-center justify-center">
-        <div className="text-center text-white">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-black flex items-center justify-center px-4">
+        <div className="text-center text-white max-w-[414px] mx-auto">
           <h2 className="text-2xl font-bold mb-4">Boxeador no encontrado</h2>
           <button
             onClick={() => router.push('/entrenar')}
-            className="bg-red-600 hover:bg-red-700 px-6 py-3 rounded-lg"
+            className="bg-[#FF4D00] hover:bg-[#FF8A00] px-6 py-3 rounded-lg font-bold"
           >
-            Volver
+            Volver al equipo
           </button>
         </div>
       </div>
@@ -83,107 +89,141 @@ export default function BoxeadorDetallePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-black p-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header con foto y datos básicos */}
-        <div className="bg-black/50 backdrop-blur-sm rounded-xl p-6 mb-6 border border-gray-800">
-          <button
-            onClick={() => router.push('/entrenar')}
-            className="text-gray-400 hover:text-white mb-4 flex items-center gap-2"
-          >
-            ← Volver al equipo
-          </button>
-
-          <div className="flex flex-col md:flex-row gap-6">
-            {/* Foto */}
-            <div className="w-full md:w-64 h-64 bg-gray-800 rounded-xl overflow-hidden">
-              {boxeador.foto_url ? (
-                <img
-                  src={boxeador.foto_url}
-                  alt={boxeador.nombre}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-8xl">
-                  🥊
-                </div>
-              )}
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-black">
+      {/* HEADER - CENTRADO */}
+      <header className="sticky top-0 z-50 bg-black/95 backdrop-blur-md border-b border-zinc-800 p-3">
+        <div className="flex items-center justify-between max-w-[414px] mx-auto">
+          <Link href="/entrenar" className="flex items-center gap-2 group">
+            <div className="bg-[#00FBFF] text-black p-1.5 rounded-lg group-hover:scale-110 transition-transform">
+              <ArrowLeft size={20} />
             </div>
+            <div>
+              <h1 className="text-lg font-black italic tracking-tighter leading-none">
+                LIFE <span className="text-[#00FBFF]">FIGHTER</span>
+              </h1>
+              <p className="text-[10px] text-zinc-500 leading-none">Detalles del Boxeador</p>
+            </div>
+          </Link>
+        </div>
+      </header>
 
-            {/* Info básica */}
-            <div className="flex-1">
-              <h1 className="text-4xl font-bold text-white mb-2">
+      {/* CONTENIDO PRINCIPAL - CENTRADO */}
+      <main className="px-3 pb-4 max-w-[414px] mx-auto">
+        {/* IMAGEN DEL BOXEADOR - CORREGIDA CON object-top */}
+        <div className="relative mt-4 mb-6">
+          <div className="relative w-full aspect-[3/4] max-w-[320px] mx-auto rounded-2xl overflow-hidden border-4 border-zinc-800 shadow-2xl bg-zinc-900">
+            {boxeador.foto_url ? (
+              <Image
+                src={`${boxeador.foto_url}?width=600&height=800&quality=90&format=webp`}
+                alt={boxeador.nombre}
+                fill
+                sizes="(max-width: 414px) 320px, 400px"
+                className="object-cover object-top"
+                priority
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-zinc-900 to-black flex items-center justify-center">
+                <span className="text-6xl">🥊</span>
+              </div>
+            )}
+            
+            {/* OVERLAY CON NOMBRE Y APODO */}
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/90 to-transparent p-4">
+              <h1 className="text-2xl font-bold text-white text-center mb-1">
                 {boxeador.nombre}
               </h1>
-              <p className="text-2xl text-red-400 font-semibold mb-4">
+              <p className="text-[#00FBFF] italic font-bold text-lg text-center">
                 "{boxeador.apodo}"
               </p>
-              
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-gray-400">País</p>
-                  <p className="text-white font-semibold">🌍 {boxeador.pais}</p>
-                </div>
-                <div>
-                  <p className="text-gray-400">Categoría</p>
-                  <p className="text-white font-semibold">{boxeador.categoria}</p>
-                </div>
-                <div>
-                  <p className="text-gray-400">Peso</p>
-                  <p className="text-white font-semibold">⚖️ {boxeador.peso_detalle}</p>
-                </div>
-                <div>
-                  <p className="text-gray-400">Altura / Alcance</p>
-                  <p className="text-white font-semibold">📏 {boxeador.altura_alcance}</p>
-                </div>
-                <div>
-                  <p className="text-gray-400">Récord</p>
-                  <p className="text-white font-semibold">🥊 {boxeador.record}</p>
-                </div>
-                <div>
-                  <p className="text-gray-400">Títulos</p>
-                  <p className="text-white font-semibold">🏆 {boxeador.titulos}</p>
-                </div>
-              </div>
             </div>
           </div>
         </div>
 
-        {/* Tabs de Sección Principal */}
-        <div className="flex gap-4 mb-6">
+        {/* INFORMACIÓN BÁSICA - CENTRADA */}
+        <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-4 border border-zinc-800 mb-6">
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <div className="bg-zinc-900/50 rounded-xl p-3 text-center">
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <MapPin size={14} className="text-[#00FBFF]" />
+                <span className="text-white text-sm font-bold">País</span>
+              </div>
+              <p className="text-zinc-300 text-sm">{boxeador.pais}</p>
+            </div>
+            
+            <div className="bg-zinc-900/50 rounded-xl p-3 text-center">
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <Trophy size={14} className="text-amber-400" />
+                <span className="text-white text-sm font-bold">Récord</span>
+              </div>
+              <p className="text-zinc-300 text-sm font-bold">{boxeador.record}</p>
+            </div>
+            
+            <div className="bg-zinc-900/50 rounded-xl p-3 text-center">
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <Scale size={14} className="text-[#FF4D00]" />
+                <span className="text-white text-sm font-bold">Categoría</span>
+              </div>
+              <p className="text-zinc-300 text-sm">{boxeador.categoria}</p>
+            </div>
+            
+            <div className="bg-zinc-900/50 rounded-xl p-3 text-center">
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <Weight size={14} className="text-emerald-400" />
+                <span className="text-white text-sm font-bold">Peso</span>
+              </div>
+              <p className="text-zinc-300 text-sm">{boxeador.peso_detalle}</p>
+            </div>
+          </div>
+          
+          {/* TÍTULOS */}
+          {boxeador.titulos && (
+            <div className="bg-gradient-to-r from-amber-900/20 to-yellow-900/20 rounded-xl p-3 border border-amber-800/50">
+              <div className="flex items-center gap-2 mb-1">
+                <Award size={14} className="text-amber-400" />
+                <span className="text-white text-sm font-bold">Títulos Obtenidos</span>
+              </div>
+              <p className="text-amber-300 text-sm text-center">{boxeador.titulos}</p>
+            </div>
+          )}
+        </div>
+
+        {/* TABS DE SECCIÓN PRINCIPAL - CENTRADOS */}
+        <div className="flex gap-2 mb-4">
           <button
             onClick={() => setActiveSection('conocer')}
-            className={`flex-1 py-4 px-6 rounded-xl font-bold text-lg transition-all ${
+            className={`flex-1 py-3 px-2 rounded-xl font-bold text-sm transition-all ${
               activeSection === 'conocer'
-                ? 'bg-red-600 text-white shadow-lg shadow-red-500/50 scale-105'
-                : 'bg-black/50 text-gray-400 hover:bg-gray-800 backdrop-blur-sm'
+                ? 'bg-[#FF4D00] text-white shadow-lg shadow-[#FF4D00]/50'
+                : 'bg-zinc-900/50 text-zinc-400 hover:bg-zinc-800 backdrop-blur-sm'
             }`}
           >
-            📖 Conocer al Luchador
+            <span className="block text-lg">📖</span>
+            <span className="text-xs">Conocer</span>
           </button>
           <button
             onClick={() => setActiveSection('rutina')}
-            className={`flex-1 py-4 px-6 rounded-xl font-bold text-lg transition-all ${
+            className={`flex-1 py-3 px-2 rounded-xl font-bold text-sm transition-all ${
               activeSection === 'rutina'
-                ? 'bg-red-600 text-white shadow-lg shadow-red-500/50 scale-105'
-                : 'bg-black/50 text-gray-400 hover:bg-gray-800 backdrop-blur-sm'
+                ? 'bg-[#FF4D00] text-white shadow-lg shadow-[#FF4D00]/50'
+                : 'bg-zinc-900/50 text-zinc-400 hover:bg-zinc-800 backdrop-blur-sm'
             }`}
           >
-            🥊 Rutina de Hoy
+            <span className="block text-lg">🥊</span>
+            <span className="text-xs">Rutina</span>
           </button>
         </div>
 
-        {/* Contenido según sección activa */}
+        {/* CONTENIDO SEGÚN SECCIÓN ACTIVA */}
         {activeSection === 'conocer' ? (
-          <div className="bg-black/50 backdrop-blur-sm rounded-xl p-6 border border-gray-800">
-            {/* Tabs de contenido */}
-            <div className="flex flex-wrap gap-2 mb-6">
+          <div className="bg-black/40 backdrop-blur-sm rounded-2xl p-4 border border-zinc-800">
+            {/* TABS DE CONTENIDO - SCROLL HORIZONTAL */}
+            <div className="flex overflow-x-auto pb-2 mb-4 gap-2 no-scrollbar">
               {[
                 { id: 'biografia', label: '📜 Biografía', icon: '📜' },
                 { id: 'tecnica', label: '🥋 Técnica', icon: '🥋' },
                 { id: 'entrenamiento', label: '💪 Entrenamiento', icon: '💪' },
                 { id: 'alimentacion', label: '🍎 Alimentación', icon: '🍎' },
-                { id: 'combinaciones', label: '🥊 Combinaciones', icon: '🥊' },
+                { id: 'combinaciones', label: '🥊 Combos', icon: '🥊' },
                 { id: 'filosofia', label: '🧠 Filosofía', icon: '🧠' },
                 { id: 'contexto', label: '📅 Contexto', icon: '📅' },
                 { id: 'legado', label: '👑 Legado', icon: '👑' },
@@ -191,23 +231,25 @@ export default function BoxeadorDetallePage() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                  className={`px-3 py-2 rounded-lg font-semibold text-xs transition-all whitespace-nowrap flex-shrink-0 ${
                     activeTab === tab.id
-                      ? 'bg-red-600 text-white'
-                      : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                      ? 'bg-[#00FBFF] text-black'
+                      : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
                   }`}
                 >
-                  {tab.icon} {tab.label.split(' ')[1]}
+                  {tab.icon} {tab.label}
                 </button>
               ))}
             </div>
 
-            {/* Contenido del tab */}
-            <div className="bg-gray-900/50 rounded-lg p-6 min-h-96">
+            {/* CONTENIDO DEL TAB */}
+            <div className="bg-zinc-900/30 rounded-xl p-4 min-h-[300px]">
               {activeTab === 'biografia' && (
                 <div>
-                  <h2 className="text-2xl font-bold text-white mb-4">📜 Biografía</h2>
-                  <p className="text-gray-300 leading-relaxed whitespace-pre-line">
+                  <h2 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                    <span className="text-xl">📜</span> Biografía
+                  </h2>
+                  <p className="text-zinc-300 leading-relaxed text-sm">
                     {boxeador.biografia || 'No hay información disponible.'}
                   </p>
                 </div>
@@ -215,21 +257,22 @@ export default function BoxeadorDetallePage() {
 
               {activeTab === 'tecnica' && (
                 <div>
-                  <h2 className="text-2xl font-bold text-white mb-4">🥋 Instrucción Técnica</h2>
-                  <p className="text-gray-300 leading-relaxed whitespace-pre-line">
+                  <h2 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                    <span className="text-xl">🥋</span> Instrucción Técnica
+                  </h2>
+                  <p className="text-zinc-300 leading-relaxed text-sm">
                     {boxeador.instruccion_tecnica || 'No hay información disponible.'}
                   </p>
                   
                   {boxeador.video_tecnico && (
-                    <div className="mt-6">
-                      <h3 className="text-xl font-bold text-white mb-3">🎥 Video Técnico</h3>
+                    <div className="mt-6 text-center">
                       <a
                         href={boxeador.video_tecnico}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-semibold transition-all"
+                        className="inline-flex items-center gap-2 bg-gradient-to-r from-[#FF4D00] to-[#FF8A00] text-white px-6 py-3 rounded-xl font-bold transition-all hover:opacity-90"
                       >
-                        ▶️ Ver Video en YouTube
+                        <span className="text-lg">▶️</span> Ver Video Técnico
                       </a>
                     </div>
                   )}
@@ -238,8 +281,10 @@ export default function BoxeadorDetallePage() {
 
               {activeTab === 'entrenamiento' && (
                 <div>
-                  <h2 className="text-2xl font-bold text-white mb-4">💪 Entrenamiento</h2>
-                  <p className="text-gray-300 leading-relaxed whitespace-pre-line">
+                  <h2 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                    <span className="text-xl">💪</span> Entrenamiento
+                  </h2>
+                  <p className="text-zinc-300 leading-relaxed text-sm">
                     {boxeador.entrenamiento || 'No hay información disponible.'}
                   </p>
                 </div>
@@ -247,8 +292,10 @@ export default function BoxeadorDetallePage() {
 
               {activeTab === 'alimentacion' && (
                 <div>
-                  <h2 className="text-2xl font-bold text-white mb-4">🍎 Alimentación</h2>
-                  <p className="text-gray-300 leading-relaxed whitespace-pre-line">
+                  <h2 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                    <span className="text-xl">🍎</span> Alimentación
+                  </h2>
+                  <p className="text-zinc-300 leading-relaxed text-sm">
                     {boxeador.alimentacion || 'No hay información disponible.'}
                   </p>
                 </div>
@@ -256,23 +303,27 @@ export default function BoxeadorDetallePage() {
 
               {activeTab === 'combinaciones' && (
                 <div>
-                  <h2 className="text-2xl font-bold text-white mb-4">🥊 Combinaciones</h2>
-                  <div className="bg-red-900/20 border border-red-700 rounded-lg p-4 mb-4">
-                    <p className="text-red-300 font-mono text-lg">
+                  <h2 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                    <span className="text-xl">🥊</span> Combinaciones
+                  </h2>
+                  <div className="bg-gradient-to-r from-[#FF4D00]/20 to-[#FF8A00]/20 border border-[#FF4D00]/30 rounded-xl p-4 mb-3">
+                    <p className="text-white font-mono text-base font-bold text-center">
                       {boxeador.combinaciones || 'No hay información disponible.'}
                     </p>
                   </div>
-                  <p className="text-gray-400 text-sm">
-                    * Estas son las combinaciones características de {boxeador.nombre}
+                  <p className="text-zinc-400 text-xs text-center">
+                    * Combinaciones características de {boxeador.nombre}
                   </p>
                 </div>
               )}
 
               {activeTab === 'filosofia' && (
                 <div>
-                  <h2 className="text-2xl font-bold text-white mb-4">🧠 Filosofía de Vida</h2>
-                  <div className="bg-gradient-to-r from-purple-900/20 to-blue-900/20 border border-purple-700 rounded-lg p-6 mb-4">
-                    <p className="text-purple-200 text-xl italic leading-relaxed">
+                  <h2 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                    <span className="text-xl">🧠</span> Filosofía de Vida
+                  </h2>
+                  <div className="bg-gradient-to-r from-[#00FBFF]/10 to-cyan-900/10 border border-[#00FBFF]/20 rounded-xl p-4 mb-3">
+                    <p className="text-[#00FBFF] text-base italic leading-relaxed">
                       "{boxeador.filosofia_vida || 'No hay información disponible.'}"
                     </p>
                   </div>
@@ -281,8 +332,10 @@ export default function BoxeadorDetallePage() {
 
               {activeTab === 'contexto' && (
                 <div>
-                  <h2 className="text-2xl font-bold text-white mb-4">📅 Contexto Histórico</h2>
-                  <p className="text-gray-300 leading-relaxed whitespace-pre-line">
+                  <h2 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                    <span className="text-xl">📅</span> Contexto Histórico
+                  </h2>
+                  <p className="text-zinc-300 leading-relaxed text-sm">
                     {boxeador.contexto_historico || 'No hay información disponible.'}
                   </p>
                 </div>
@@ -290,8 +343,10 @@ export default function BoxeadorDetallePage() {
 
               {activeTab === 'legado' && (
                 <div>
-                  <h2 className="text-2xl font-bold text-white mb-4">👑 Legado Histórico</h2>
-                  <p className="text-gray-300 leading-relaxed whitespace-pre-line">
+                  <h2 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                    <span className="text-xl">👑</span> Legado Histórico
+                  </h2>
+                  <p className="text-zinc-300 leading-relaxed text-sm">
                     {boxeador.legado_historico || 'No hay información disponible.'}
                   </p>
                 </div>
@@ -301,7 +356,27 @@ export default function BoxeadorDetallePage() {
         ) : (
           <EntrenamientoCompleto boxeadorId={Number(params.id)} />
         )}
-      </div>
+      </main>
+
+      {/* FOOTER */}
+      <footer className="sticky bottom-0 bg-black/95 backdrop-blur-md border-t border-zinc-800 p-3">
+        <div className="max-w-[414px] mx-auto">
+          <div className="flex gap-2">
+            <Link 
+              href="/" 
+              className="flex-1 bg-gradient-to-r from-[#00FBFF] to-[#0088FF] text-black font-bold py-3 rounded-xl text-sm text-center"
+            >
+              🏠 Inicio
+            </Link>
+            <Link 
+              href="/entrenar" 
+              className="flex-1 bg-zinc-800 text-white font-bold py-3 rounded-xl text-sm text-center border border-zinc-700"
+            >
+              👤 Mi Equipo
+            </Link>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
