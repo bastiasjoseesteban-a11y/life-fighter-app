@@ -1,11 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'export', // ✅ Habilitar export estático
   images: {
-    // Esto permite que Next.js cargue imágenes desde tu servidor de Supabase
+    unoptimized: true, // ✅ Deshabilitar optimización para entornos estáticos
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '**.supabase.co', // Autoriza todos los subdominios de Supabase
+        hostname: '**.supabase.co',
       },
     ],
   },

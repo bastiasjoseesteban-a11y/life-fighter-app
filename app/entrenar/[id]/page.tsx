@@ -1,12 +1,20 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { supabase } from '@/lib/supabaseClient';
+import { createClient } from '@supabase/supabase-js';
 import EntrenamientoCompleto from '../components/EntrenamientoCompleto';
 import Link from 'next/link';
 import { ArrowLeft, MapPin, Scale, Weight, Trophy, Award } from 'lucide-react';
 import Image from 'next/image';
+
+// ✅ Importamos el PremiumManager centralizado
+import { PremiumManager } from '@/lib/premium-service';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 interface Boxeador {
   id: number;
@@ -37,27 +45,43 @@ export default function BoxeadorDetallePage() {
   const [activeSection, setActiveSection] = useState<'conocer' | 'rutina'>('conocer');
   const [activeTab, setActiveTab] = useState<string>('biografia');
   const [loading, setLoading] = useState(true);
+  const [accessGranted, setAccessGranted] = useState(false);
 
   useEffect(() => {
     if (params.id) {
-      fetchBoxeador();
+      verifyAndLoad();
     }
   }, [params.id]);
 
-  const fetchBoxeador = async () => {
+  const verifyAndLoad = async () => {
+    const boxerId = Number(params.id);
+    
     try {
+      // ✅ VERIFICACIÓN DE ACCESO PREMIUM (misma lógica que en la página anterior)
+      const hasAccess = await PremiumManager.hasAccess(boxerId);
+      
+      if (!hasAccess) {
+        // Si no tiene acceso, redirigir a la página de pago
+        router.replace(`/boxeador/${boxerId}`);
+        return;
+      }
+      
+      // Acceso concedido - continuar con la carga
+      setAccessGranted(true);
+      
       const { data, error } = await supabase
         .from('boxeadores_completo')
         .select('*')
-        .eq('id', params.id)
+        .eq('id', boxerId)
         .single();
 
       if (error) throw error;
       setBoxeador(data);
-    } catch (error) {
-      console.error('Error fetching boxeador:', error);
-    } finally {
       setLoading(false);
+    } catch (error) {
+      console.error('Error cargando boxeador:', error);
+      // En caso de error, redirigir también
+      router.replace(`/boxeador/${boxerId}`);
     }
   };
 
@@ -66,7 +90,9 @@ export default function BoxeadorDetallePage() {
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-black flex items-center justify-center">
         <div className="flex flex-col items-center">
           <div className="w-20 h-20 border-3 border-[#00FBFF] border-t-transparent rounded-full animate-spin mb-4"></div>
-          <p className="text-[#00FBFF] font-bold text-sm">CARGANDO...</p>
+          <p className="text-[#00FBFF] font-bold text-sm">
+            {accessGranted ? 'CARGANDO ENTRENAMIENTO...' : 'VERIFICANDO ACCESO...'}
+          </p>
         </div>
       </div>
     );
@@ -101,7 +127,7 @@ export default function BoxeadorDetallePage() {
               <h1 className="text-lg font-black italic tracking-tighter leading-none">
                 LIFE <span className="text-[#00FBFF]">FIGHTER</span>
               </h1>
-              <p className="text-[10px] text-zinc-500 leading-none">Detalles del Boxeador</p>
+              <p className="text-[10px] text-zinc-500 leading-none">Entrenamiento Premium</p>
             </div>
           </Link>
         </div>
@@ -109,7 +135,7 @@ export default function BoxeadorDetallePage() {
 
       {/* CONTENIDO PRINCIPAL - CENTRADO */}
       <main className="px-3 pb-4 max-w-[414px] mx-auto">
-        {/* IMAGEN DEL BOXEADOR - CORREGIDA CON object-top */}
+        {/* IMAGEN DEL BOXEADOR */}
         <div className="relative mt-4 mb-6">
           <div className="relative w-full aspect-[3/4] max-w-[320px] mx-auto rounded-2xl overflow-hidden border-4 border-zinc-800 shadow-2xl bg-zinc-900">
             {boxeador.foto_url ? (
@@ -197,7 +223,7 @@ export default function BoxeadorDetallePage() {
                 : 'bg-zinc-900/50 text-zinc-400 hover:bg-zinc-800 backdrop-blur-sm'
             }`}
           >
-            <span className="block text-lg">📖</span>
+            <span className="block text-lg">📚</span>
             <span className="text-xs">Conocer</span>
           </button>
           <button
@@ -208,7 +234,7 @@ export default function BoxeadorDetallePage() {
                 : 'bg-zinc-900/50 text-zinc-400 hover:bg-zinc-800 backdrop-blur-sm'
             }`}
           >
-            <span className="block text-lg">🥊</span>
+            <span className="block text-lg">💪</span>
             <span className="text-xs">Rutina</span>
           </button>
         </div>
@@ -219,14 +245,14 @@ export default function BoxeadorDetallePage() {
             {/* TABS DE CONTENIDO - SCROLL HORIZONTAL */}
             <div className="flex overflow-x-auto pb-2 mb-4 gap-2 no-scrollbar">
               {[
-                { id: 'biografia', label: '📜 Biografía', icon: '📜' },
-                { id: 'tecnica', label: '🥋 Técnica', icon: '🥋' },
-                { id: 'entrenamiento', label: '💪 Entrenamiento', icon: '💪' },
+                { id: 'biografia', label: '📖 Biografía', icon: '📖' },
+                { id: 'tecnica', label: '🥊 Técnica', icon: '🥊' },
+                { id: 'entrenamiento', label: '🏋️ Entrenamiento', icon: '🏋️' },
                 { id: 'alimentacion', label: '🍎 Alimentación', icon: '🍎' },
-                { id: 'combinaciones', label: '🥊 Combos', icon: '🥊' },
+                { id: 'combinaciones', label: '🎯 Combos', icon: '🎯' },
                 { id: 'filosofia', label: '🧠 Filosofía', icon: '🧠' },
-                { id: 'contexto', label: '📅 Contexto', icon: '📅' },
-                { id: 'legado', label: '👑 Legado', icon: '👑' },
+                { id: 'contexto', label: '🌍 Contexto', icon: '🌍' },
+                { id: 'legado', label: '🏆 Legado', icon: '🏆' },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -247,7 +273,7 @@ export default function BoxeadorDetallePage() {
               {activeTab === 'biografia' && (
                 <div>
                   <h2 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
-                    <span className="text-xl">📜</span> Biografía
+                    <span className="text-xl">📖</span> Biografía
                   </h2>
                   <p className="text-zinc-300 leading-relaxed text-sm">
                     {boxeador.biografia || 'No hay información disponible.'}
@@ -258,7 +284,7 @@ export default function BoxeadorDetallePage() {
               {activeTab === 'tecnica' && (
                 <div>
                   <h2 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
-                    <span className="text-xl">🥋</span> Instrucción Técnica
+                    <span className="text-xl">🥊</span> Instrucción Técnica
                   </h2>
                   <p className="text-zinc-300 leading-relaxed text-sm">
                     {boxeador.instruccion_tecnica || 'No hay información disponible.'}
@@ -272,7 +298,7 @@ export default function BoxeadorDetallePage() {
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-2 bg-gradient-to-r from-[#FF4D00] to-[#FF8A00] text-white px-6 py-3 rounded-xl font-bold transition-all hover:opacity-90"
                       >
-                        <span className="text-lg">▶️</span> Ver Video Técnico
+                        <span className="text-lg">🎬</span> Ver Video Técnico
                       </a>
                     </div>
                   )}
@@ -282,7 +308,7 @@ export default function BoxeadorDetallePage() {
               {activeTab === 'entrenamiento' && (
                 <div>
                   <h2 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
-                    <span className="text-xl">💪</span> Entrenamiento
+                    <span className="text-xl">🏋️</span> Entrenamiento
                   </h2>
                   <p className="text-zinc-300 leading-relaxed text-sm">
                     {boxeador.entrenamiento || 'No hay información disponible.'}
@@ -304,7 +330,7 @@ export default function BoxeadorDetallePage() {
               {activeTab === 'combinaciones' && (
                 <div>
                   <h2 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
-                    <span className="text-xl">🥊</span> Combinaciones
+                    <span className="text-xl">🎯</span> Combinaciones
                   </h2>
                   <div className="bg-gradient-to-r from-[#FF4D00]/20 to-[#FF8A00]/20 border border-[#FF4D00]/30 rounded-xl p-4 mb-3">
                     <p className="text-white font-mono text-base font-bold text-center">
@@ -333,7 +359,7 @@ export default function BoxeadorDetallePage() {
               {activeTab === 'contexto' && (
                 <div>
                   <h2 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
-                    <span className="text-xl">📅</span> Contexto Histórico
+                    <span className="text-xl">🌍</span> Contexto Histórico
                   </h2>
                   <p className="text-zinc-300 leading-relaxed text-sm">
                     {boxeador.contexto_historico || 'No hay información disponible.'}
@@ -344,7 +370,7 @@ export default function BoxeadorDetallePage() {
               {activeTab === 'legado' && (
                 <div>
                   <h2 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
-                    <span className="text-xl">👑</span> Legado Histórico
+                    <span className="text-xl">🏆</span> Legado Histórico
                   </h2>
                   <p className="text-zinc-300 leading-relaxed text-sm">
                     {boxeador.legado_historico || 'No hay información disponible.'}
@@ -372,7 +398,7 @@ export default function BoxeadorDetallePage() {
               href="/entrenar" 
               className="flex-1 bg-zinc-800 text-white font-bold py-3 rounded-xl text-sm text-center border border-zinc-700"
             >
-              👤 Mi Equipo
+              🥊 Mi Equipo
             </Link>
           </div>
         </div>
