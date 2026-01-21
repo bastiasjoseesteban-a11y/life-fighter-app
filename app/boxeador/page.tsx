@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback, Suspense } from 'react'; // ✅ Añade Suspense aquí
 import { createClient } from '@supabase/supabase-js';
 import { Search, Home, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
@@ -8,9 +8,12 @@ import { useRouter, useSearchParams } from 'next/navigation';
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
-export default function GaleriaPage() {
+// ============================================
+// COMPONENTE HIJO CON LA LÓGICA (usa useSearchParams)
+// ============================================
+function GaleriaContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const searchParams = useSearchParams(); // ✅ Ahora seguro dentro del cliente
   
   // Obtener parámetros de la URL
   const urlPage = searchParams.get('page');
@@ -362,5 +365,21 @@ export default function GaleriaPage() {
         </div>
       )}
     </div>
+  );
+}
+
+// ============================================
+// COMPONENTE PRINCIPAL (envuelve el contenido en Suspense)
+// ============================================
+export default function GaleriaPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center">
+        <div className="w-12 h-12 border-3 border-[#00FBFF] border-t-transparent rounded-full animate-spin mb-3"></div>
+        <p className="text-[#00FBFF] font-bold text-sm">CARGANDO...</p>
+      </div>
+    }>
+      <GaleriaContent />
+    </Suspense>
   );
 }
