@@ -1,17 +1,17 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react'; // ✅ Añadido: Suspense
 import { createClient } from '@supabase/supabase-js';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Home, ArrowLeft, Trophy, Ruler, Weight, Activity, Globe, Award, Lock, Crown, Check, X } from 'lucide-react';
 import Image from 'next/image';
 
 // ✅ Importamos el servicio premium centralizado
-import { 
-  PremiumManager, 
-  GooglePlayBilling, 
-  BOXEADORES_GRATIS, 
+import {
+  PremiumManager,
+  GooglePlayBilling,
+  BOXEADORES_GRATIS,
   PRECIO_PREMIUM_USD,
-  formatCurrency 
+  formatCurrency
 } from '@/lib/premium-service';
 
 const supabase = createClient(
@@ -41,13 +41,13 @@ interface Boxeador {
 // ============================================
 // MODAL DE PAGO PREMIUM
 // ============================================
-function ModalPremium({ 
-  boxeador, 
-  onClose, 
-  onSuccess 
-}: { 
-  boxeador: Boxeador; 
-  onClose: () => void; 
+function ModalPremium({
+  boxeador,
+  onClose,
+  onSuccess
+}: {
+  boxeador: Boxeador;
+  onClose: () => void;
   onSuccess: () => void;
 }) {
   const [step, setStep] = useState<'info' | 'processing' | 'success' | 'error'>('info');
@@ -78,7 +78,7 @@ function ModalPremium({
       });
 
       setStep('success');
-      
+
       // Redirigir después de éxito
       setTimeout(() => {
         onSuccess();
@@ -94,7 +94,7 @@ function ModalPremium({
   return (
     <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-gradient-to-br from-zinc-900 to-black border-2 border-[#00FBFF]/30 rounded-3xl max-w-md w-full p-6 relative shadow-2xl">
-        
+
         <button onClick={onClose} className="absolute top-4 right-4 text-zinc-500 hover:text-white transition-colors">
           <X size={24} />
         </button>
@@ -225,16 +225,16 @@ function InfoBox({ icon, label, value }: { icon: any, label: string, value: stri
 }
 
 // ============================================
-// COMPONENTE PRINCIPAL
+// COMPONENTE HIJO CON LA LÓGICA (ahora puede usar useSearchParams)
 // ============================================
-export default function DetalleBoxeador() {
+function DetalleBoxeadorContent() {
   const { id } = useParams();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  
+  const searchParams = useSearchParams(); // ✅ Ahora este hook está seguro dentro de un componente que se renderiza en el cliente
+
   const page = searchParams.get('page') || '0';
   const search = searchParams.get('search') || '';
-  
+
   const [boxeador, setBoxeador] = useState<Boxeador | null>(null);
   const [loading, setLoading] = useState(true);
   const [accessInfo, setAccessInfo] = useState<{
@@ -242,7 +242,7 @@ export default function DetalleBoxeador() {
     isFree: boolean;
     daysLeft?: number;
   } | null>(null);
-  
+
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
@@ -256,10 +256,10 @@ export default function DetalleBoxeador() {
         .select('*')
         .eq('id', id)
         .single();
-      
+
       if (data) {
         setBoxeador(data);
-        
+
         // ✅ Obtener información de acceso premium
         const info = await PremiumManager.getAccessInfo(Number(id));
         setAccessInfo(info);
@@ -296,7 +296,7 @@ export default function DetalleBoxeador() {
     setShowModal(false);
     // Recargar información de acceso
     loadData();
-    
+
     // Redirigir después de 500ms
     setTimeout(() => {
       router.push(`/entrenar/${boxeador!.id}`);
@@ -323,7 +323,7 @@ export default function DetalleBoxeador() {
       <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-4">
         <div className="text-6xl mb-4">🥊</div>
         <h1 className="text-2xl font-bold mb-4">Boxeador no encontrado</h1>
-        <button 
+        <button
           onClick={handleBackToGallery}
           className="px-6 py-3 bg-[#00FBFF] text-black font-bold rounded-full hover:scale-105 transition-transform"
         >
@@ -339,10 +339,10 @@ export default function DetalleBoxeador() {
   return (
     <div className="min-h-screen bg-black text-white p-4 md:p-10 font-sans">
       <div className="max-w-6xl mx-auto">
-        
+
         {/* HEADER */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
-          <button 
+          <button
             onClick={handleGoHome}
             className="flex items-center gap-3 group mb-4 md:mb-0 self-start"
           >
@@ -364,8 +364,8 @@ export default function DetalleBoxeador() {
                 <span className="text-black font-bold text-sm">PREMIUM</span>
               </div>
             )}
-            
-            <button 
+
+            <button
               onClick={handleBackToGallery}
               className="flex items-center gap-2 px-6 py-3 bg-zinc-900 rounded-full text-[#00FBFF] font-bold uppercase text-sm hover:bg-[#00FBFF] hover:text-black transition-colors"
             >
@@ -380,19 +380,19 @@ export default function DetalleBoxeador() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 items-start">
-          
+
           {/* IMAGEN */}
           <div className="relative h-[300px] sm:h-[400px] md:h-[500px] lg:h-[600px] rounded-3xl md:rounded-[3.5rem] overflow-hidden border-2 border-[#00FBFF]/20 shadow-[0_0_50px_rgba(0,251,255,0.1)]">
-            <Image 
-              src={fixImagePath(boxeador.foto_url)} 
-              alt={boxeador.nombre} 
-              fill 
+            <Image
+              src={fixImagePath(boxeador.foto_url)}
+              alt={boxeador.nombre}
+              fill
               className="object-cover"
               priority
               sizes="(max-width: 768px) 100vw, 50vw"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60" />
-            
+
             {esPremium && !tieneAcceso && (
               <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
                 <div className="text-center">
@@ -415,12 +415,12 @@ export default function DetalleBoxeador() {
 
             {/* INFO BOXES */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 mb-6 md:mb-8">
-              <InfoBox icon={<Globe size={20}/>} label="País" value={boxeador.pais || boxeador.nacionalidad} />
-              <InfoBox icon={<Activity size={20}/>} label="Categoría" value={boxeador.categoria} />
-              <InfoBox icon={<Weight size={20}/>} label="Peso" value={boxeador.peso_detalle} />
-              <InfoBox icon={<Ruler size={20}/>} label="Altura / Alcance" value={boxeador.altura_alcance} />
-              <InfoBox icon={<Trophy size={20}/>} label="Récord Profesional" value={boxeador.record} />
-              <InfoBox icon={<Award size={20}/>} label="Títulos" value={boxeador.titulos} />
+              <InfoBox icon={<Globe size={20} />} label="País" value={boxeador.pais || boxeador.nacionalidad} />
+              <InfoBox icon={<Activity size={20} />} label="Categoría" value={boxeador.categoria} />
+              <InfoBox icon={<Weight size={20} />} label="Peso" value={boxeador.peso_detalle} />
+              <InfoBox icon={<Ruler size={20} />} label="Altura / Alcance" value={boxeador.altura_alcance} />
+              <InfoBox icon={<Trophy size={20} />} label="Récord Profesional" value={boxeador.record} />
+              <InfoBox icon={<Award size={20} />} label="Títulos" value={boxeador.titulos} />
             </div>
 
             {/* BIOGRAFÍA */}
@@ -443,7 +443,7 @@ export default function DetalleBoxeador() {
 
             {/* BOTÓN DE ACCIÓN - PUNTO DE CONEXIÓN */}
             <div className="mt-4 md:mt-6">
-              <button 
+              <button
                 onClick={handleEmpezarEntrenamiento}
                 className="w-full bg-gradient-to-r from-[#00FBFF] to-[#00ccff] text-black py-5 md:py-6 rounded-2xl md:rounded-[2rem] font-black uppercase italic text-lg md:text-xl shadow-[0_0_30px_rgba(0,251,255,0.4)] hover:scale-[1.02] active:scale-95 transition-all relative overflow-hidden group"
               >
@@ -462,7 +462,7 @@ export default function DetalleBoxeador() {
                 </span>
                 <div className="absolute inset-0 bg-gradient-to-r from-[#00FBFF] to-white opacity-0 group-hover:opacity-20 transition-opacity"></div>
               </button>
-              
+
               {!esPremium ? (
                 <p className="text-center text-green-400 text-xs mt-3 font-bold">
                   ✅ Boxeador GRATUITO - Acceso completo incluido
@@ -483,12 +483,28 @@ export default function DetalleBoxeador() {
 
       {/* MODAL DE PAGO PREMIUM */}
       {showModal && boxeador && (
-        <ModalPremium 
+        <ModalPremium
           boxeador={boxeador}
           onClose={() => setShowModal(false)}
           onSuccess={handlePurchaseSuccess}
         />
       )}
     </div>
+  );
+}
+
+// ============================================
+// COMPONENTE PRINCIPAL (envuelve el contenido en Suspense)
+// ============================================
+export default function DetalleBoxeador() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center">
+        <div className="w-16 h-16 border-4 border-[#00FBFF] border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p className="text-[#00FBFF] font-bold text-lg">CARGANDO...</p>
+      </div>
+    }>
+      <DetalleBoxeadorContent />
+    </Suspense>
   );
 }
