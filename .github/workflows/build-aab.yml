@@ -22,36 +22,25 @@ jobs:
       
     - name: Aceptar licencias de Android SDK
       run: |
-        # Método alternativo para aceptar licencias
         mkdir -p $ANDROID_HOME/licenses
         echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > $ANDROID_HOME/licenses/android-sdk-license
         echo "84831b9409646a918e30573bab4c9c91346d8abd" > $ANDROID_HOME/licenses/android-sdk-preview-license
         
-    - name: Instalar componentes Android necesarios
+    - name: Instalar componentes Android
       run: |
-        # Actualizar PATH para incluir sdkmanager
-        export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/tools/bin:$PATH
-        
-        # Instalar componentes específicos
-        sdkmanager --install "platform-tools"
-        sdkmanager --install "platforms;android-33"
-        sdkmanager --install "build-tools;33.0.0"
+        $ANDROID_HOME/tools/bin/sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.0"
         
     - name: Dar permisos a Gradle
       run: |
         cd android
         chmod +x gradlew
-        cd ..
         
     - name: Configurar propiedades de Gradle
       run: |
         cd android
-        cat > gradle.properties << EOF
-android.useAndroidX=true
-org.gradle.jvmargs=-Xmx4096m
-android.enableAapt2Daemon=false
-EOF
-        cd ..
+        echo "android.useAndroidX=true" > gradle.properties
+        echo "org.gradle.jvmargs=-Xmx4096m" >> gradle.properties
+        echo "android.enableAapt2Daemon=false" >> gradle.properties
         
     - name: Compilar AAB
       working-directory: ./android
