@@ -27,8 +27,11 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Android
+      - name: Setup Android SDK 34
         uses: android-actions/setup-android@v3
+        with:
+          api-level: 34
+          build-tools: 34.0.0
 
       - name: Accept licenses
         run: |
@@ -38,36 +41,23 @@ jobs:
         run: |
           cd android
           rm -f settings.gradle gradle.properties
+          
           echo "include ':app'" > settings.gradle
           echo "include ':capacitor-android'" >> settings.gradle
           echo "project(':capacitor-android').projectDir = new File('../node_modules/@capacitor/android/capacitor')" >> settings.gradle
+          
           echo "android.useAndroidX=true" > gradle.properties
           echo "org.gradle.jvmargs=-Xmx2048m" >> gradle.properties
 
-      - name: Clean build
+      - name: Build AAB
         working-directory: ./android
         run: |
           chmod +x gradlew
           ./gradlew clean --no-daemon
-
-      - name: Build APK Debug
-        working-directory: ./android
-        run: |
-          ./gradlew assembleDebug --no-daemon --stacktrace
-
-      - name: Build AAB Release
-        working-directory: ./android
-        run: |
-          ./gradlew bundleRelease --no-daemon --stacktrace --warning-mode all
+          ./gradlew bundleRelease --no-daemon --stacktrace
 
       - name: Upload AAB
         uses: actions/upload-artifact@v4
         with:
           name: app-release-aab
           path: android/app/build/outputs/bundle/release/app-release.aab
-
-      - name: Upload APK Debug (backup)
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
