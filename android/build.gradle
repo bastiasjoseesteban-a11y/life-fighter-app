@@ -21,9 +21,9 @@ allprojects {
                     sourceCompatibility JavaVersion.VERSION_17
                     targetCompatibility JavaVersion.VERSION_17
                 }
-                // SECCIÓN CORREGIDA: Eliminamos la opción incompatible con Linux
+                
+                // SECCIÓN CORREGIDA: Se eliminó 'additionalParameters' para evitar errores en Linux
                 aaptOptions {
-                    additionalParameters '--no-crunch'
                     ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
                 }
             }
