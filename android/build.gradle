@@ -1,0 +1,59 @@
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.13.0'
+        
+        // NOTA: No añadas classpath de google-services a menos que uses Firebase
+    }
+}
+
+// ⭐⭐ CONFIGURACIÓN GLOBAL PARA TODOS LOS MÓDULOS ⭐⭐
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    
+    // 1. Forzar Java 17 en todos los módulos
+    afterEvaluate { project ->
+        if (project.hasProperty('android')) {
+            android {
+                compileOptions {
+                    sourceCompatibility JavaVersion.VERSION_17
+                    targetCompatibility JavaVersion.VERSION_17
+                }
+                
+                // Configuración AAPT2 para evitar error del PNG
+                aaptOptions {
+                    additionalParameters '--use-compiled-resources', '--no-crunch'
+                    ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+                }
+            }
+        }
+    }
+    
+    // 2. ⭐⭐ SOLUCIÓN NUCLEAR: Forzar androidx.core:core:1.15.0 EN TODAS LAS DEPENDENCIAS ⭐⭐
+    configurations.all {
+        resolutionStrategy.eachDependency { details ->
+            // Forzar TODAS las versiones de androidx.core a usar 1.15.0
+            if (details.requested.group == 'androidx.core' && 
+                details.requested.name == 'core') {
+                details.useVersion '1.15.0'
+                details.because 'Solución definitiva para error de PNG corrupto en Windows'
+            }
+            
+            // También forzar core-ktx si existe
+            if (details.requested.group == 'androidx.core' && 
+                details.requested.name == 'core-ktx') {
+                details.useVersion '1.15.0'
+            }
+        }
+    }
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}
