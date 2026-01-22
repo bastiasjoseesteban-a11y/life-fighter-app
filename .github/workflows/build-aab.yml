@@ -12,6 +12,28 @@ jobs:
         cache: npm
     - name: Instalar dependencias
       run: npm ci
+    - name: Generar capacitor.config.json
+      run: |
+        echo "=== Generando capacitor.config.json desde capacitor.config.ts ==="
+        # Si necesitas TypeScript, instálalo
+        npm install typescript --no-save
+        # Genera el archivo JSON
+        npx tsx -e "
+          import config from './capacitor.config.ts';
+          import { writeFileSync } from 'fs';
+          writeFileSync('./capacitor.config.json', JSON.stringify(config, null, 2));
+          console.log('✅ capacitor.config.json generado:', config);
+        " || echo "⚠️  Usando método alternativo"
+        
+        # Método alternativo si falla TypeScript
+        if [ ! -f "capacitor.config.json" ]; then
+          echo "{\"appId\":\"com.esteban.lifefighter\",\"appName\":\"LifeFighter\",\"webDir\":\"out\"}" > capacitor.config.json
+          echo "✅ capacitor.config.json creado manualmente"
+        fi
+        
+        cat capacitor.config.json
+    - name: Construir proyecto Next.js
+      run: npm run build
     - name: Sincronizar Capacitor
       run: |
         echo "=== Sincronizando Capacitor ==="
