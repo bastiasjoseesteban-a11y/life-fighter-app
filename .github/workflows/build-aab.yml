@@ -1,7 +1,7 @@
 ﻿name: Build Android AAB
 
 on:
-  workflow_dispatch:  # Solo manual por ahora
+  workflow_dispatch:
 
 jobs:
   build:
@@ -10,11 +10,6 @@ jobs:
     steps:
     - name: Checkout código
       uses: actions/checkout@v4
-      with:
-        sparse-checkout: |
-          android/
-          .github/
-        sparse-checkout-cone-mode: false
       
     - name: Configurar JDK 17
       uses: actions/setup-java@v4
@@ -22,16 +17,18 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
         
-    - name: Dar permisos a Gradle
+    - name: Configurar Android SDK
+      uses: android-actions/setup-android@v3
+      
+    - name: Aceptar licencias de Android SDK
+      run: |
+        yes | /tools/bin/sdkmanager --licenses || true
+        /tools/bin/sdkmanager "platform-tools" "platforms;android-36" "build-tools;34.0.0"
+        
+    - name: Dar permisos y configurar Gradle
       run: |
         cd android
         chmod +x gradlew
-        cd ..
-        
-    - name: Configurar entorno Android
-      run: |
-        cd android
-        # Configuraciones críticas para evitar errores
         echo "android.useAndroidX=true" >> gradle.properties
         echo "org.gradle.jvmargs=-Xmx4096m" >> gradle.properties
         echo "android.enableAapt2Daemon=false" >> gradle.properties
@@ -40,7 +37,7 @@ jobs:
     - name: Compilar AAB
       working-directory: ./android
       run: |
-        ./gradlew :app:bundleRelease --no-daemon --stacktrace --warning-mode all
+        ./gradlew :app:bundleRelease --no-daemon --stacktrace
         
     - name: Subir AAB como artefacto
       uses: actions/upload-artifact@v4

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">LifeFighter</string>
+    <string name="title_activity_main">LifeFighter</string>
+    <string name="package_name">com.esteban.lifefighter</string>
+    <string name="custom_url_scheme">com.esteban.lifefighter</string>
+</resources>
