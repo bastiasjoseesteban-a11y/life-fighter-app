@@ -10,10 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     
     env:
-      GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2 -Dkotlin.compiler.execution.strategy=in-process"
+      GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2"
 
     steps:
-      - name: Checkout código
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Node.js
@@ -22,107 +22,46 @@ jobs:
           node-version: '18'
           cache: 'npm'
 
-      - name: Instalar dependencias Node
+      - name: Install dependencies
         run: |
           npm ci
           npm install @capacitor/android@8.0.1 --save-exact
 
-      - name: Setup Java 17
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Android SDK
+      - name: Setup Android
         uses: android-actions/setup-android@v3
 
-      - name: Aceptar licencias Android
+      - name: Accept licenses
         run: |
           mkdir -p ~/.android/licenses
           echo "d56f5187479451eabf01fb78af6dfcb131a6481e" > ~/.android/licenses/android-sdk-license
           echo "24333f8a63b6825ea9c5514f83c2829b04d79b0" >> ~/.android/licenses/android-sdk-license
 
-      - name: Preparar proyecto Android
+      - name: Prepare Android
         run: |
           cd android
-          
-          # Limpiar archivos problemáticos
           rm -f settings.gradle gradle.properties
-          
-          # Crear settings.gradle limpio (SIN BOM)
-          cat > settings.gradle << 'EOF'
-include ':app'
-include ':capacitor-android'
-project(':capacitor-android').projectDir = new File('../node_modules/@capacitor/android/capacitor')
-EOF
-          
-          # Crear gradle.properties optimizado para CI
-          cat > gradle.properties << 'EOF'
-android.useAndroidX=true
-android.enableJetifier=true
-org.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError
-org.gradle.parallel=false
-org.gradle.configureondemand=false
-org.gradle.caching=false
-EOF
+          echo "include ':app'" > settings.gradle
+          echo "include ':capacitor-android'" >> settings.gradle
+          echo "project(':capacitor-android').projectDir = new File('../node_modules/@capacitor/android/capacitor')" >> settings.gradle
+          echo "android.useAndroidX=true" > gradle.properties
+          echo "org.gradle.jvmargs=-Xmx3072m" >> gradle.properties
+          echo "org.gradle.parallel=false" >> gradle.properties
 
-      - name: Limpiar cache de Gradle
-        run: |
-          cd android
-          rm -rf .gradle build
-          rm -rf app/.gradle app/build
-
-      - name: Build AAB (SOLUCIÓN ERROR 31)
+      - name: Build AAB
         working-directory: ./android
         run: |
           chmod +x gradlew
-          
-          # SOLUCIÓN DEFINITIVA PARA ERROR 31:
-          # 1. --no-parallel: Ejecuta tareas una por una (evita ExecutionQueue error)
-          # 2. -x lint -x lintVitalRelease: Omite verificaciones que causan fallo post-build
-          # 3. --no-daemon: Evita problemas de memoria
-          # 4. --stacktrace: Para ver error completo si falla
-          
           ./gradlew clean
-          
-          ./gradlew bundleRelease \
-            --no-daemon \
-            --no-parallel \
-            --no-configure-on-demand \
-            --stacktrace \
-            --info \
-            -x lint \
-            -x lintVitalRelease \
-            -x lintAnalyzeRelease
+          ./gradlew bundleRelease --no-daemon --no-parallel --stacktrace -x lint -x lintVitalRelease
 
-      - name: Verificar AAB generado
-        run: |
-          echo "=== Verificando archivos generados ==="
-          ls -lah android/app/build/outputs/bundle/release/ || echo "No se encontró el directorio"
-          
-          if [ -f android/app/build/outputs/bundle/release/app-release.aab ]; then
-            echo "✅ AAB generado exitosamente"
-            ls -lh android/app/build/outputs/bundle/release/app-release.aab
-          else
-            echo "❌ No se encontró el AAB"
-            exit 1
-          fi
-
-      - name: Subir AAB como artefacto
+      - name: Upload AAB
         uses: actions/upload-artifact@v4
         with:
-          name: life-fighter-release-aab
+          name: app-release-aab
           path: android/app/build/outputs/bundle/release/app-release.aab
-          if-no-files-found: error
-          retention-days: 30
-
-      - name: Mostrar información del build
-        if: success()
-        run: |
-          echo "============================================"
-          echo "✅ BUILD EXITOSO"
-          echo "============================================"
-          echo "Archivo AAB generado correctamente"
-          echo "Descarga el archivo desde la pestaña 'Actions' > 'Artifacts'"
-          echo "Nombre del artefacto: life-fighter-release-aab"
-          echo "============================================"
