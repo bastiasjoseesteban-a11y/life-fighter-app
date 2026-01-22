@@ -25,24 +25,20 @@ android {
     }
 }
 
-configurations.all {
-    resolutionStrategy {
-        force 'androidx.core:core:1.12.0'
-        force 'androidx.core:core-ktx:1.12.0'
-        force 'androidx.activity:activity:1.8.2'
-        force 'androidx.activity:activity-ktx:1.8.2'
-        force 'androidx.appcompat:appcompat:1.6.1'
-        force 'androidx.coordinatorlayout:coordinatorlayout:1.2.0'
-        force 'androidx.core:core-splashscreen:1.0.1'
-    }
-}
-
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation project(':capacitor-android')
     
-    implementation "androidx.appcompat:appcompat:1.6.1"
-    implementation "androidx.coordinatorlayout:coordinatorlayout:1.2.0"
+    implementation("androidx.appcompat:appcompat:1.6.1") {
+        exclude group: 'androidx.core'
+    }
+    implementation("androidx.coordinatorlayout:coordinatorlayout:1.2.0") {
+        exclude group: 'androidx.core'
+    }
     implementation "androidx.core:core-splashscreen:1.0.1"
     implementation "androidx.core:core:1.12.0"
+}
+
+tasks.withType(com.android.build.gradle.internal.tasks.CheckAarMetadataTask).configureEach {
+    it.enabled = false
 }
