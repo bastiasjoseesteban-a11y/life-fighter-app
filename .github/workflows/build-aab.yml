@@ -1,52 +1,40 @@
 ﻿name: Build Android AAB
-
-on:
-  workflow_dispatch:
-
+on: workflow_dispatch
 jobs:
   build:
     runs-on: ubuntu-latest
-    
     steps:
     - name: Checkout código
       uses: actions/checkout@v4
-      
     - name: Configurar JDK 17
       uses: actions/setup-java@v4
       with:
-        java-version: '17'
-        distribution: 'temurin'
-        
+        java-version: 17
+        distribution: temurin
     - name: Configurar Android SDK
       uses: android-actions/setup-android@v2
-      
-    - name: Aceptar licencias de Android SDK
+    - name: Aceptar licencias
       run: |
         mkdir -p $ANDROID_HOME/licenses
         echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > $ANDROID_HOME/licenses/android-sdk-license
         echo "84831b9409646a918e30573bab4c9c91346d8abd" > $ANDROID_HOME/licenses/android-sdk-preview-license
-        
-    - name: Instalar componentes Android
+    - name: Instalar componentes
       run: |
         $ANDROID_HOME/tools/bin/sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.0"
-        
-    - name: Dar permisos a Gradle
+    - name: Dar permisos
       run: |
         cd android
         chmod +x gradlew
-        
-    - name: Configurar propiedades de Gradle
+    - name: Configurar propiedades
       run: |
         cd android
         echo "android.useAndroidX=true" > gradle.properties
         echo "org.gradle.jvmargs=-Xmx4096m" >> gradle.properties
         echo "android.enableAapt2Daemon=false" >> gradle.properties
-        
     - name: Compilar AAB
       working-directory: ./android
       run: |
         ./gradlew :app:bundleRelease --no-daemon --stacktrace
-        
     - name: Subir AAB como artefacto
       uses: actions/upload-artifact@v4
       with:
