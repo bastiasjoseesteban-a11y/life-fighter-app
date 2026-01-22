@@ -6,27 +6,33 @@ jobs:
     steps:
     - name: Checkout código
       uses: actions/checkout@v4
-    - name: Configurar JDK 11
+    - name: Configurar JDK 17
       uses: actions/setup-java@v4
       with:
-        java-version: 11
+        java-version: 17
         distribution: temurin
     - name: Instalar Android SDK manualmente
       run: |
         # Crear directorio para Android SDK
+        export ANDROID_HOME=$HOME/android-sdk
         mkdir -p $ANDROID_HOME
-        # Descargar command line tools
+        
+        # Descargar command line tools (versión que funciona con Java 17)
         wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
         unzip -q cmdline-tools.zip -d $ANDROID_HOME/cmdline-tools
         mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/tools
-        # Añadir a PATH
+        
+        # Configurar PATH
         echo "$ANDROID_HOME/cmdline-tools/tools/bin" >> $GITHUB_PATH
         echo "$ANDROID_HOME/platform-tools" >> $GITHUB_PATH
+        echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+        
         # Aceptar licencias
-        yes | sdkmanager --licenses
-        # Instalar componentes necesarios
-        sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.0"
-        sdkmanager --update
+        yes | $ANDROID_HOME/cmdline-tools/tools/bin/sdkmanager --licenses || true
+        
+        # Instalar componentes necesarios (usar versión compatible)
+        $ANDROID_HOME/cmdline-tools/tools/bin/sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.0"
+        $ANDROID_HOME/cmdline-tools/tools/bin/sdkmanager --update
     - name: Dar permisos a Gradle
       run: |
         cd android
