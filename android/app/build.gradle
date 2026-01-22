@@ -1,4 +1,6 @@
-﻿@"
+﻿Abre Notepad (Bloc de notas de Windows)
+Copia este texto (sin el @" ni el final):
+
 apply plugin: 'com.android.application'
 
 android {
@@ -35,4 +37,3 @@ dependencies {
     implementation "androidx.core:core-splashscreen:1.2.0"
     implementation "androidx.core:core:1.12.0"
 }
-"@ | Out-File -FilePath android\app\build.gradle -Encoding UTF8
