@@ -1,57 +1,59 @@
-﻿name: 🚀 Build AAB para Google Play
+﻿name: Build AAB para Google Play
 on: workflow_dispatch
 
 jobs:
-  build-aab:
+  build:
     runs-on: ubuntu-latest
     
     steps:
-    - name: 📥 Checkout código
+    - name: Checkout
       uses: actions/checkout@v4
     
-    - name: 📦 Setup Node.js
+    - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: "18"
         cache: "npm"
     
-    - name: 🔧 Instalar dependencias
+    - name: Install dependencies
       run: |
         npm ci
-        npm install @capacitor/android@8.0.1 --save-exact
+        if [ ! -d "node_modules/@capacitor/android" ]; then
+          npm install @capacitor/android@8.0.1 --save-exact
+        fi
         
-    - name: ☕ Setup Java
+    - name: Setup Java
       uses: actions/setup-java@v4
       with:
         java-version: "17"
         distribution: "temurin"
         
-    - name: 🤖 Setup Android
+    - name: Setup Android
       uses: android-actions/setup-android@v3
       
-    - name: 📝 Aceptar licencias
+    - name: Accept licenses
       run: |
-        mkdir -p $HOME/.android/licenses
-        echo "d56f5187479451eabf01fb78af6dfcb131a6481e" > $HOME/.android/licenses/android-sdk-license
-        echo "24333f8a63b6825ea9c5514f83c2829b04d79b0" >> $HOME/.android/licenses/android-sdk-license
+        mkdir -p ~/.android/licenses
+        echo "d56f5187479451eabf01fb78af6dfcb131a6481e" > ~/.android/licenses/android-sdk-license
+        echo "24333f8a63b6825ea9c5514f83c2829b04d79b0" >> ~/.android/licenses/android-sdk-license
         
-    - name: 🔨 PREPARAR ANDROID (SIN BOM)
+    - name: Prepare Android
       run: |
         cd android
-        printf '"'"'include '"'"':app'"'"'\n'"'"' > settings.gradle
-        printf '"'"'include '"'"':capacitor-android'"'"'\n'"'"' >> settings.gradle
-        printf '"'"'project('"'"':capacitor-android'"'"').projectDir = new File('"'"'../node_modules/@capacitor/android/capacitor'"'"')\n'"'"' >> settings.gradle
+        echo "include ':app'" > settings.gradle
+        echo "include ':capacitor-android'" >> settings.gradle
+        echo "project(':capacitor-android').projectDir = new File('../node_modules/@capacitor/android/capacitor')" >> settings.gradle
         echo "android.useAndroidX=true" > gradle.properties
         echo "org.gradle.jvmargs=-Xmx4096m" >> gradle.properties
         
-    - name: 🏗️ Build AAB
+    - name: Build AAB
       working-directory: ./android
       run: |
         chmod +x gradlew
         ./gradlew clean
-        ./gradlew :app:bundleRelease --stacktrace --no-daemon
+        ./gradlew bundleRelease --stacktrace --no-daemon
         
-    - name: 📤 Upload AAB
+    - name: Upload AAB
       uses: actions/upload-artifact@v4
       with:
         name: app-release-aab
