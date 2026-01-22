@@ -18,9 +18,8 @@ jobs:
     - name: Instalar dependencias Node
       run: |
         npm ci
-        if [ ! -d "node_modules/@capacitor/android" ]; then
-          npm install @capacitor/android@8.0.1 --save-exact
-        fi
+        # Asegurar capacitor
+        npm list @capacitor/android || npm install @capacitor/android@8.0.1 --save-exact
         
     - name: Setup Java 17
       uses: actions/setup-java@v4
@@ -36,29 +35,37 @@ jobs:
         mkdir -p $HOME/.android/licenses
         echo "d56f5187479451eabf01fb78af6dfcb131a6481e" > $HOME/.android/licenses/android-sdk-license
         echo "24333f8a63b6825ea9c5514f83c2829b04d79b0" >> $HOME/.android/licenses/android-sdk-license
+        echo "✅ Licencias configuradas"
         
-    - name: Preparar proyecto Android
+    - name: Preparar Android (100% libre de BOM)
       run: |
+        echo "=== PREPARANDO ANDROID SIN BOM ==="
         cd android
-        # Solo limpiar ruta de Windows si existe
-        if [ -f "gradle.properties" ]; then
-          sed -i '/org.gradle.java.home/d' gradle.properties
-        fi
-        # Añadir configuraciones si no existen
-        echo "android.useAndroidX=true" >> gradle.properties
+        
+        # MÉTODO INFALIBLE: Recrear todo con echo
+        echo "include ':app'" > settings.gradle
+        echo "include ':capacitor-android'" >> settings.gradle
+        echo "project(':capacitor-android').projectDir = new File('../node_modules/@capacitor/android/capacitor')" >> settings.gradle
+        
+        echo "android.useAndroidX=true" > gradle.properties
+        echo "android.enableJetifier=true" >> gradle.properties
         echo "org.gradle.jvmargs=-Xmx4096m" >> gradle.properties
-        echo "=== Verificando capacitor ==="
-        ls -la "../node_modules/@capacitor/android/capacitor/" || echo "⚠️  No se encontró capacitor"
+        
+        # Verificar que no hay BOM
+        echo "=== Verificación anti-BOM ==="
+        echo "Primer carácter de settings.gradle:"
+        head -c 1 settings.gradle | xxd
         
     - name: Construir AAB
       working-directory: ./android
       run: |
         chmod +x gradlew
         ./gradlew clean
-        ./gradlew bundleRelease --stacktrace --no-daemon
+        ./gradlew :app:bundleRelease --stacktrace --no-daemon
         
     - name: Subir AAB
       uses: actions/upload-artifact@v4
       with:
         name: app-release-aab
         path: android/app/build/outputs/bundle/release/*.aab
+        retention-days: 30
