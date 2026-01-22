@@ -18,7 +18,7 @@ jobs:
         ls -la node_modules/@capacitor/ 2>/dev/null || echo "Capacitor no instalado"
         echo ""
         echo "=== Instalando Capacitor si es necesario ==="
-        npm install @capacitor/core @capacitor/cli @capacitor/android @capacitor/cordova-android-plugins
+        npm install @capacitor/core @capacitor/cli @capacitor/android
         echo ""
         echo "=== Sincronizando Capacitor ==="
         npx cap sync android

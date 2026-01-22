@@ -29,7 +29,7 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation project(':capacitor-android')
-    implementation project(':capacitor-cordova-android-plugins')
+    
     
     // ⭐⭐ DEPENDENCIAS ACTUALIZADAS Y CORREGIDAS ⭐⭐
     implementation "androidx.appcompat:appcompat:1.7.1"
