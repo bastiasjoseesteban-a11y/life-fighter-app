@@ -1,4 +1,4 @@
-﻿Abre Notepad (Bloc de notas de Windows)
+Abre Notepad (Bloc de notas de Windows)
 Copia este texto (sin el @" ni el final):
 
 apply plugin: 'com.android.application'
