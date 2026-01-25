@@ -1,11 +1,13 @@
-/** @type {import('next').NextConfig} */
+﻿/** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: "export",
+  trailingSlash: true, // Mejora la compatibilidad de rutas en Android
   images: {
-    // Esto permite que Next.js cargue imágenes desde tu servidor de Supabase
+    unoptimized: true, // Necesario para exportaciones estáticas
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: '**.supabase.co', // Autoriza todos los subdominios de Supabase
+        protocol: "https",
+        hostname: "**.supabase.co",
       },
     ],
   },

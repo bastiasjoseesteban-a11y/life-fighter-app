@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState, Suspense } from 'react'; // ✅ Añadido: Suspense
+import React, { useEffect, useState, Suspense } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Home, ArrowLeft, Trophy, Ruler, Weight, Activity, Globe, Award, Lock, Crown, Check, X } from 'lucide-react';

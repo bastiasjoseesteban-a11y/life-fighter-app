@@ -17,9 +17,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: |
-          npm ci
-          npm install @capacitor/android@8.0.1 --save-exact
+        run: npm ci
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -27,34 +25,31 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Android SDK 34
+      - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
-          api-level: 34
-          build-tools: 34.0.0
+          cmdline-tools-version: 11076708
+
+      - name: Install Android SDK packages
+        run: |
+          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
       - name: Accept licenses
-        run: |
-          yes | sdkmanager --licenses || true
+        run: yes | sdkmanager --licenses || true
 
-      - name: Prepare Android
+      - name: Build web app
         run: |
-          cd android
-          rm -f settings.gradle gradle.properties
-          
-          echo "include ':app'" > settings.gradle
-          echo "include ':capacitor-android'" >> settings.gradle
-          echo "project(':capacitor-android').projectDir = new File('../node_modules/@capacitor/android/capacitor')" >> settings.gradle
-          
-          echo "android.useAndroidX=true" > gradle.properties
-          echo "org.gradle.jvmargs=-Xmx2048m" >> gradle.properties
+          npm run build
+          npm run export
+
+      - name: Sync Capacitor
+        run: npx cap sync android
 
       - name: Build AAB
         working-directory: ./android
         run: |
           chmod +x gradlew
-          ./gradlew clean --no-daemon
-          ./gradlew bundleRelease --no-daemon --stacktrace
+          ./gradlew clean bundleRelease --no-daemon --stacktrace
 
       - name: Upload AAB
         uses: actions/upload-artifact@v4

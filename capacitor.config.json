@@ -1,0 +1,8 @@
+﻿{
+  "appId": "com.esteban.lifefighter",
+  "appName": "LifeFighter",
+  "webDir": "out",
+  "server": {
+    "androidScheme": "https"
+  }
+}

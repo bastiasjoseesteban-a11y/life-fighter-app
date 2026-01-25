@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { 
-  Info, ShoppingCart, RefreshCcw, Crown, Home
+  Info, ShoppingCart, RefreshCcw, Crown, Home, Settings
 } from 'lucide-react';
 
 // Silueta que preferiste
@@ -72,7 +72,6 @@ export default function HomePage() {
 
           <div className="flex flex-col items-center justify-center -mt-1">
             <h1 className="text-3xl font-black tracking-[0.2em] italic drop-shadow-[0_2px_3px_rgba(0,0,0,0.8)] text-center">
-              {/* CAMBIO AQUÍ: Gradiente más anaranjado intenso */}
               <span className="bg-gradient-to-r from-orange-600 via-orange-500 to-orange-600 bg-clip-text text-transparent">
                 LIFE FIGHTER
               </span>
@@ -157,8 +156,22 @@ export default function HomePage() {
           </Link>
         </div>
 
-        {/* FOOTER: Botón de Tienda */}
-        <div className="h-[74px] flex items-center justify-center border-t border-gray-900/80 bg-black/40 backdrop-blur-sm">
+        {/* FOOTER: Configuración + Tienda */}
+        <div className="h-[74px] flex items-center justify-center gap-6 border-t border-gray-900/80 bg-black/40 backdrop-blur-sm">
+          
+          {/* BOTÓN CONFIGURACIÓN (Izquierda) */}
+          <Link 
+            href="/configuracion"
+            onClick={() => handleButtonPress('configuracion')}
+            className="relative active:scale-90 transition-transform group p-3"
+          >
+            <div className="absolute -inset-2 bg-purple-500/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-purple-800 rounded-full flex items-center justify-center shadow-[0_4px_15px_rgba(147,51,234,0.4)] border border-purple-500/50">
+              <Settings className="w-6 h-6 text-white" strokeWidth={2.5} />
+            </div>
+          </Link>
+
+          {/* BOTÓN TIENDA (Derecha) */}
           <button 
             onClick={() => {
               handleButtonPress('tienda');
@@ -171,6 +184,7 @@ export default function HomePage() {
               <ShoppingCart className="w-6 h-6 text-gray-900" strokeWidth={2.5} />
             </div>
           </button>
+
         </div>
 
       </div>
