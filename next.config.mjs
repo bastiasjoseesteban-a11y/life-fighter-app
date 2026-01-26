@@ -1,9 +1,8 @@
 ﻿/** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "export",
-  trailingSlash: true, // Mejora la compatibilidad de rutas en Android
+  // ELIMINAR output: "export" - no es compatible con Edge Functions
   images: {
-    unoptimized: true, // Necesario para exportaciones estáticas
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: "https",
