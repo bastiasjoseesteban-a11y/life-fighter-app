@@ -1,0 +1,14 @@
+# Ignorar Edge Functions de Supabase (ya deployadas en Supabase)
+supabase/
+
+# Ignorar archivos de Android (solo para .aab)
+android/
+
+# Ignorar archivos de capacitor
+capacitor.config.ts
+capacitor.config.json
+
+# Ignorar builds locales
+.next/
+out/
+build/
